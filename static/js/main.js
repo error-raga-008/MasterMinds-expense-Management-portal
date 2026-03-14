@@ -24,6 +24,56 @@ function escapeHtml(value) {
         .replace(/'/g, '&#39;');
 }
 
+async function fetchJson(url, options) {
+    const requestOptions = options || {};
+    const controller = new AbortController();
+    const timeoutId = setTimeout(function () {
+        controller.abort();
+    }, 12000);
+
+    try {
+        const response = await fetch(url, {
+            method: requestOptions.method || 'GET',
+            headers: Object.assign({
+                'Accept': 'application/json'
+            }, requestOptions.headers || {}),
+            body: requestOptions.body,
+            credentials: 'same-origin',
+            cache: 'no-store',
+            signal: controller.signal
+        });
+
+        let data = {};
+        const contentType = response.headers.get('content-type') || '';
+
+        if (contentType.indexOf('application/json') >= 0) {
+            data = await response.json();
+        } else {
+            const text = await response.text();
+            data = { error: text || 'Unexpected server response' };
+        }
+
+        return {
+            ok: response.ok,
+            data: data
+        };
+    } catch (error) {
+        if (error && error.name === 'AbortError') {
+            return {
+                ok: false,
+                data: { error: 'Request timed out. Please try again.' }
+            };
+        }
+
+        return {
+            ok: false,
+            data: { error: 'Network error. Check your connection and retry.' }
+        };
+    } finally {
+        clearTimeout(timeoutId);
+    }
+}
+
 function initNotifications() {
     const bell = document.getElementById('notificationBell');
     const badge = document.getElementById('notificationBadge');
@@ -95,7 +145,7 @@ function initNotifications() {
             return Promise.resolve();
         }
 
-        return fetch('/api/notifications/read-visible', {
+        return fetchJson('/api/notifications/read-visible', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ ids })
@@ -103,8 +153,7 @@ function initNotifications() {
     }
 
     function loadNotifications(markVisible) {
-        return fetch('/api/notifications?limit=15')
-            .then((response) => response.json().then((data) => ({ ok: response.ok, data })))
+        return fetchJson('/api/notifications?limit=15')
             .then(({ ok, data }) => {
                 if (!ok) {
                     throw new Error(data.error || 'Unable to load notifications');
@@ -143,8 +192,7 @@ function initNotifications() {
     }
 
     function refreshUnreadCount() {
-        return fetch('/api/notifications/count')
-            .then((response) => response.json().then((data) => ({ ok: response.ok, data })))
+        return fetchJson('/api/notifications/count')
             .then(({ ok, data }) => {
                 if (!ok) {
                     return;
@@ -184,11 +232,10 @@ function initNotifications() {
     });
 
     markAllBtn.addEventListener('click', function () {
-        fetch('/api/notifications/read-all', {
+        fetchJson('/api/notifications/read-all', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' }
         })
-            .then((response) => response.json().then((data) => ({ ok: response.ok, data })))
             .then(({ ok }) => {
                 if (!ok) {
                     return;

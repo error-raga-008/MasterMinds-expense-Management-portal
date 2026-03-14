@@ -98,7 +98,7 @@ class LedgerManager {
 
         let html = `
             <div class="ledger-table-container">
-                <table class="ledger-table">
+                <table class="ledger-table ledger-mobile-stack">
                     <thead>
                         <tr>
                             <th>Transaction ID</th>
@@ -121,23 +121,23 @@ class LedgerManager {
 
             html += `
                 <tr class="ledger-row" data-status="${tx.status}">
-                    <td class="tx-id">#${tx.id}</td>
-                    <td>
+                    <td class="tx-id" data-label="Transaction ID">#${tx.id}</td>
+                    <td data-label="From">
                         <span class="user-badge" style="background: ${payerColor}20; border-left: 4px solid ${payerColor}">
                             ${tx.payer_name}
                         </span>
                     </td>
-                    <td>
+                    <td data-label="To">
                         <span class="user-badge" style="background: ${payeeColor}20; border-left: 4px solid ${payeeColor}">
                             ${tx.payee_name}
                         </span>
                     </td>
-                    <td>
+                    <td data-label="Amount">
                         <strong style="color: ${statusColor}">${this.formatCurrency(tx.amount)}</strong>
                     </td>
-                    <td class="expense-name">${expenseText}</td>
-                    <td class="timestamp">${this.formatTimestamp(tx.timestamp)}</td>
-                    <td>${this.getStatusBadge(tx.status)}</td>
+                    <td class="expense-name" data-label="Expense">${expenseText}</td>
+                    <td class="timestamp" data-label="Date & Time">${this.formatTimestamp(tx.timestamp)}</td>
+                    <td data-label="Status">${this.getStatusBadge(tx.status)}</td>
                 </tr>
             `;
         });

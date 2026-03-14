@@ -519,12 +519,20 @@ def get_user_groups(username):
     conn = get_db()
     c = conn.cursor()
     c.execute("""
-        SELECT g.group_id, g.group_name, g.currency, g.created_by, g.created_at,
-               g.invite_token, COUNT(gm.user_id) as member_count
+        SELECT g.group_id,
+               g.group_name,
+               g.currency,
+               g.created_by,
+               g.created_at,
+               g.invite_token,
+               (
+                   SELECT COUNT(*)
+                   FROM groups_members gm_all
+                   WHERE gm_all.group_id = g.group_id AND gm_all.is_active = 1
+               ) as member_count
         FROM groups g
-        JOIN groups_members gm ON g.group_id = gm.group_id
-        WHERE gm.user_id = ? AND gm.is_active = 1
-        GROUP BY g.group_id
+        JOIN groups_members gm_user ON g.group_id = gm_user.group_id
+        WHERE gm_user.user_id = ? AND gm_user.is_active = 1
         ORDER BY g.created_at DESC
     """, (username,))
     
@@ -620,6 +628,58 @@ def get_pending_cash_settlements(group_id, receiver_username):
     rows = [dict(row) for row in c.fetchall()]
     conn.close()
     return rows
+
+
+def calculate_group_health_metrics(group_id):
+    """Read-only financial health score for a group (0-100)."""
+    balances = calculate_group_balances(group_id)
+    settlements, _ = advanced_greedy_settlement(group_id)
+
+    pending_debts = len(settlements)
+    imbalance = round(sum(abs(v) for v in balances.values()) / 2, 2)
+    unsettled_members = sum(1 for v in balances.values() if abs(v) > 0.01)
+    large_unpaid_balances = sum(1 for v in balances.values() if abs(v) >= 200)
+
+    # Score penalties
+    pending_penalty = min(45, pending_debts * 8)
+    imbalance_penalty = min(35, int(imbalance // 100) * 4 + (4 if imbalance > 0 else 0))
+    large_balance_penalty = min(20, large_unpaid_balances * 6)
+
+    score = max(0, min(100, 100 - pending_penalty - imbalance_penalty - large_balance_penalty))
+
+    insights = []
+
+    if pending_debts <= 1:
+        insights.append({'type': 'good', 'text': 'Most debts are already settled.'})
+    elif pending_debts <= 3:
+        insights.append({'type': 'good', 'text': 'Only a few settlement transfers remain.'})
+    else:
+        insights.append({'type': 'warn', 'text': 'Several settlements are still pending.'})
+
+    if imbalance < 100:
+        insights.append({'type': 'good', 'text': 'Expenses look evenly balanced across members.'})
+    elif imbalance < 300:
+        insights.append({'type': 'warn', 'text': 'There is moderate imbalance between members.'})
+    else:
+        insights.append({'type': 'warn', 'text': 'There is high imbalance between members.'})
+
+    if large_unpaid_balances == 0:
+        insights.append({'type': 'good', 'text': 'No large unpaid balances detected.'})
+    else:
+        member_word = 'member' if large_unpaid_balances == 1 else 'members'
+        insights.append({
+            'type': 'warn',
+            'text': f'{large_unpaid_balances} {member_word} still have large unpaid balances.'
+        })
+
+    return {
+        'score': score,
+        'pending_debts': pending_debts,
+        'imbalance': imbalance,
+        'unsettled_members': unsettled_members,
+        'large_unpaid_balances': large_unpaid_balances,
+        'insights': insights
+    }
 
 
 # ============= HELPER FUNCTIONS =============
@@ -929,6 +989,48 @@ def dashboard():
     conn.close()
     
     return render_template('dashboard.html', user=user)
+
+
+@app.route('/monthly-trend')
+def monthly_trend_page():
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+
+    return render_template('monthly_trend.html')
+
+
+@app.route('/api/monthly-trend', methods=['GET'])
+def api_monthly_trend():
+    if 'user_id' not in session:
+        return {'error': 'Not logged in'}, 401
+
+    conn = get_db()
+    c = conn.cursor()
+
+    c.execute("""
+        SELECT strftime('%Y-%m', created_at) AS ym,
+               SUM(amount) AS total
+        FROM expenses
+        WHERE paid_by = ?
+        GROUP BY ym
+        ORDER BY ym
+    """, (session['user_id'],))
+
+    rows = c.fetchall()
+    conn.close()
+
+    months = []
+    totals = []
+
+    for row in rows:
+        ym = row['ym']
+        if not ym:
+            continue
+        dt = datetime.strptime(ym, '%Y-%m')
+        months.append(dt.strftime('%b'))
+        totals.append(round(float(row['total'] or 0), 2))
+
+    return {'months': months, 'totals': totals}, 200
 
 
 @app.route('/profile')
@@ -1970,6 +2072,30 @@ def api_get_balances(group_id):
     balances = calculate_group_balances(group_id)
     
     return {'balances': balances}, 200
+
+
+@app.route('/api/group-health/<int:group_id>', methods=['GET'])
+def api_group_health(group_id):
+    if 'user_id' not in session:
+        return {'error': 'Not logged in'}, 401
+
+    conn = get_db()
+    c = conn.cursor()
+
+    # Verify access
+    c.execute("""
+        SELECT role FROM groups_members
+        WHERE group_id = ? AND user_id = ? AND is_active = 1
+    """, (group_id, session['user_id']))
+
+    if not c.fetchone():
+        conn.close()
+        return {'error': 'Access denied'}, 403
+
+    conn.close()
+
+    metrics = calculate_group_health_metrics(group_id)
+    return metrics, 200
 
 
 @app.route('/api/groups/<int:group_id>/settle', methods=['GET'])

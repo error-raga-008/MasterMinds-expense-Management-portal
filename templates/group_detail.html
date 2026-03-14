@@ -30,6 +30,28 @@
         {% endif %}
     </section>
 
+    <section class="card group-health-card" aria-labelledby="group-health-title">
+        <div class="group-health-head">
+            <h2 id="group-health-title" class="section-title">Group Financial Health Score</h2>
+            <p class="section-subtitle section-subtitle-compact">How balanced and settled this group is right now.</p>
+        </div>
+
+        <div class="group-health-score-row">
+            <span id="group-health-score" class="group-health-score-value">--</span>
+            <span class="group-health-score-max">/ 100</span>
+        </div>
+
+        <div class="group-health-progress" aria-label="Group health score progress">
+            <div id="group-health-progress-fill" class="group-health-progress-fill"></div>
+        </div>
+
+        <p id="group-health-summary" class="group-health-summary">Loading health insights...</p>
+
+        <ul id="group-health-insights" class="group-health-insights">
+            <li>Loading insights...</li>
+        </ul>
+    </section>
+
     <div class="group-tabs" role="tablist" aria-label="Group tabs">
         <button onclick="switchTab('expenses')" class="tab-button active" data-tab="expenses" type="button">
             📋 Expenses
@@ -1016,6 +1038,55 @@ function getStatusColor(status) {
     return status === 'COMPLETED' ? '#4CAF50' : '#FF9800';
 }
 
+function getHealthTone(score) {
+    if (score < 40) return 'health-red';
+    if (score < 70) return 'health-yellow';
+    return 'health-green';
+}
+
+async function loadGroupHealthScore() {
+    const scoreEl = document.getElementById('group-health-score');
+    const fillEl = document.getElementById('group-health-progress-fill');
+    const summaryEl = document.getElementById('group-health-summary');
+    const insightsEl = document.getElementById('group-health-insights');
+
+    if (!scoreEl || !fillEl || !summaryEl || !insightsEl) return;
+
+    try {
+        const response = await fetch(`/api/group-health/{{ group.group_id }}`);
+        if (!response.ok) throw new Error('Failed to load group health');
+
+        const data = await response.json();
+        const score = Math.max(0, Math.min(100, Number(data.score) || 0));
+        const toneClass = getHealthTone(score);
+
+        scoreEl.textContent = score;
+        fillEl.style.width = `${score}%`;
+        fillEl.className = `group-health-progress-fill ${toneClass}`;
+        summaryEl.textContent = `${data.pending_debts || 0} pending debt(s), ${Number(data.imbalance || 0).toFixed(2)} total imbalance.`;
+
+        const insights = Array.isArray(data.insights) ? data.insights : [];
+        if (insights.length === 0) {
+            insightsEl.innerHTML = '<li>Health insights are currently unavailable.</li>';
+            return;
+        }
+
+        insightsEl.innerHTML = insights.map((item) => {
+            const isGood = item.type === 'good';
+            const icon = isGood ? '✔' : '⚠';
+            const cls = isGood ? 'insight-good' : 'insight-warn';
+            return `<li class="${cls}">${icon} ${item.text}</li>`;
+        }).join('');
+    } catch (error) {
+        console.error('Error loading group health score:', error);
+        scoreEl.textContent = '--';
+        fillEl.style.width = '0%';
+        fillEl.className = 'group-health-progress-fill';
+        summaryEl.textContent = 'Unable to load group health score right now.';
+        insightsEl.innerHTML = '<li class="insight-warn">⚠ Could not load financial health insights.</li>';
+    }
+}
+
 async function loadLedgerData() {
     try {
         // Fetch transactions
@@ -1113,6 +1184,7 @@ async function loadLedgerData() {
 }
 
 // Initialize
+loadGroupHealthScore();
 updateSplitUI();
 
 const memberUsernameInput = document.getElementById('memberUsername');

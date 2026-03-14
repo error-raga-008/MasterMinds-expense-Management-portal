@@ -5,6 +5,7 @@
     const tabButtons = Array.from(document.querySelectorAll('.tab-btn'));
     const tabPanels = Array.from(document.querySelectorAll('.tab-panel'));
     let debounceTimer;
+    let activeSearchController;
 
     if (!searchInput || !searchResults) {
         return;
@@ -93,47 +94,114 @@
         searchResults.classList.add('active');
     }
 
-    async function searchUsers(term) {
-        renderSearchSkeleton(true);
-        const response = await fetch('/api/search-users', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ search_term: term })
-        });
+    async function fetchJson(url, options) {
+        const requestOptions = options || {};
+        const controller = requestOptions.signal ? null : new AbortController();
+        const signal = requestOptions.signal || (controller ? controller.signal : undefined);
+        const timeoutId = controller
+            ? setTimeout(function () {
+                controller.abort();
+            }, 10000)
+            : null;
 
-        const data = await response.json();
-        renderSearchSkeleton(false);
-        if (!response.ok) {
-            throw new Error(data.error || 'Search failed');
+        try {
+            const response = await fetch(url, {
+                method: requestOptions.method || 'GET',
+                headers: Object.assign({
+                    'Accept': 'application/json'
+                }, requestOptions.headers || {}),
+                body: requestOptions.body,
+                credentials: 'same-origin',
+                cache: 'no-store',
+                signal: signal
+            });
+
+            let data = {};
+            const contentType = response.headers.get('content-type') || '';
+
+            if (contentType.indexOf('application/json') >= 0) {
+                data = await response.json();
+            } else {
+                const text = await response.text();
+                data = { error: text || 'Unexpected server response' };
+            }
+
+            if (!response.ok) {
+                throw new Error(data.error || 'Request failed');
+            }
+
+            return data;
+        } catch (error) {
+            if (error && error.name === 'AbortError') {
+                if (requestOptions.signal) {
+                    throw error;
+                }
+                throw new Error('Request timed out. Please try again.');
+            }
+            throw error;
+        } finally {
+            if (timeoutId) {
+                clearTimeout(timeoutId);
+            }
         }
-        renderSearchResults(data.results);
+    }
+
+    async function searchUsers(term) {
+        if (!navigator.onLine) {
+            throw new Error('You appear to be offline. Reconnect and try again.');
+        }
+
+        if (activeSearchController) {
+            activeSearchController.abort();
+        }
+
+        activeSearchController = new AbortController();
+        renderSearchSkeleton(true);
+
+        try {
+            const data = await fetchJson('/api/search-users', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ search_term: term }),
+                signal: activeSearchController.signal
+            });
+
+            renderSearchSkeleton(false);
+            renderSearchResults(data.results);
+        } catch (error) {
+            renderSearchSkeleton(false);
+            if (error && error.name === 'AbortError') {
+                return;
+            }
+            throw error;
+        } finally {
+            activeSearchController = null;
+        }
     }
 
     async function sendFriendRequest(username) {
-        const response = await fetch('/api/send-friend-request', {
+        if (!navigator.onLine) {
+            throw new Error('You appear to be offline. Reconnect and try again.');
+        }
+
+        await fetchJson('/api/send-friend-request', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ receiver_name: username })
         });
-
-        const data = await response.json();
-        if (!response.ok) {
-            throw new Error(data.error || 'Unable to send request');
-        }
     }
 
     async function updateRequest(sender, action) {
+        if (!navigator.onLine) {
+            throw new Error('You appear to be offline. Reconnect and try again.');
+        }
+
         const endpoint = action === 'accept' ? '/api/accept-friend-request' : '/api/reject-friend-request';
-        const response = await fetch(endpoint, {
+        await fetchJson(endpoint, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ sender_name: sender })
         });
-
-        const data = await response.json();
-        if (!response.ok) {
-            throw new Error(data.error || 'Operation failed');
-        }
     }
 
     tabButtons.forEach(function (button) {

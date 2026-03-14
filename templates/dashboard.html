@@ -60,6 +60,7 @@
 
         <div class="actions mt-16">
             <a class="btn btn-primary" href="{{ url_for('friends') }}">Manage Friends</a>
+            <a class="btn btn-ghost" href="{{ url_for('monthly_trend_page') }}">View Spending Trends</a>
             {% if user['profile_pic_url'] %}
             <a class="btn btn-ghost" href="{{ user['profile_pic_url'] }}" target="_blank" rel="noopener noreferrer">Open Picture</a>
             {% endif %}

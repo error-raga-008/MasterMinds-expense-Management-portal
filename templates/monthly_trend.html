@@ -1,0 +1,74 @@
+{% extends 'base.html' %}
+
+{% block title %}Monthly Spending Trend | MasterMinds{% endblock %}
+
+{% block head_extra %}
+<style>
+    .trend-page {
+        margin-top: 1rem;
+    }
+
+    .trend-card {
+        padding: 1rem;
+    }
+
+    .trend-header {
+        margin-bottom: 0.9rem;
+    }
+
+    .trend-title {
+        margin: 0;
+        font-family: 'Sora', sans-serif;
+        font-size: clamp(1.2rem, 2.8vw, 1.6rem);
+    }
+
+    .trend-subtitle {
+        margin: 0.35rem 0 0;
+        color: var(--muted);
+        font-size: 0.9rem;
+    }
+
+    .trend-chart-wrap {
+        position: relative;
+        width: 100%;
+        height: 360px;
+    }
+
+    .trend-empty {
+        color: var(--muted);
+        text-align: center;
+        padding: 1.6rem 0.5rem;
+    }
+
+    @media (max-width: 768px) {
+        .trend-card {
+            padding: 0.9rem;
+        }
+
+        .trend-chart-wrap {
+            height: 280px;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container trend-page">
+    <section class="card trend-card">
+        <header class="trend-header">
+            <h1 class="trend-title">Monthly Spending Trend</h1>
+            <p class="trend-subtitle">Your total expenses per month.</p>
+        </header>
+
+        <div class="trend-chart-wrap">
+            <canvas id="monthlyChart" aria-label="Monthly spending trend chart" role="img"></canvas>
+        </div>
+        <p id="trendEmpty" class="trend-empty" hidden>No spending data available yet.</p>
+    </section>
+</div>
+{% endblock %}
+
+{% block script_extra %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="{{ url_for('static', filename='js/monthly_trend.js') }}"></script>
+{% endblock %}

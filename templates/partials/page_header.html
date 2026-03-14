@@ -1,0 +1,22 @@
+{#
+  Reusable Page Header Component
+  Usage:
+  {% from 'partials/page_header.html' import page_header %}
+  {{ page_header('Groups', 'Track and manage shared expenses', 'Create Group', url_for('create_group_page')) }}
+#}
+{% macro page_header(title, subtitle='', action_text='', action_href='#', action_class='btn btn-primary', action_id='') -%}
+<header class="page-header">
+    <div>
+        <h1 class="page-title">{{ title }}</h1>
+        {% if subtitle %}
+        <p class="section-subtitle section-subtitle-compact">{{ subtitle }}</p>
+        {% endif %}
+    </div>
+
+    {% if action_text %}
+    <div class="page-header-actions">
+        <a href="{{ action_href }}" class="{{ action_class }}" {% if action_id %}id="{{ action_id }}"{% endif %}>{{ action_text }}</a>
+    </div>
+    {% endif %}
+</header>
+{%- endmacro %}

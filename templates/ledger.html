@@ -14,7 +14,7 @@
     <section class="ledger-section">
         {% if ledger_entries %}
         <div class="ledger-table-container">
-            <table class="ledger-table">
+            <table class="ledger-table ledger-mobile-stack">
                 <thead>
                     <tr>
                         <th>Time</th>
@@ -25,30 +25,22 @@
                         <th>Method</th>
                         <th>Txn ID</th>
                         <th>Status</th>
-                        <th>Current Hash</th>
-                        <th>Previous Hash</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for entry in ledger_entries %}
                     <tr>
-                        <td>{{ entry.created_at }}</td>
-                        <td>{{ entry.group_name }}</td>
-                        <td>{{ entry.from_name }} ({{ entry.from_user }})</td>
-                        <td>{{ entry.to_name }} ({{ entry.to_user }})</td>
-                        <td>Rs {{ "%.2f"|format(entry.amount) }}</td>
-                        <td>{{ entry.payment_method }}</td>
-                        <td>{{ entry.transaction_id }}</td>
-                        <td>
+                        <td data-label="Time">{{ entry.created_at }}</td>
+                        <td data-label="Group">{{ entry.group_name }}</td>
+                        <td data-label="From">{{ entry.from_name }} ({{ entry.from_user }})</td>
+                        <td data-label="To">{{ entry.to_name }} ({{ entry.to_user }})</td>
+                        <td data-label="Amount">Rs {{ "%.2f"|format(entry.amount) }}</td>
+                        <td data-label="Method">{{ entry.payment_method }}</td>
+                        <td data-label="Txn ID">{{ entry.transaction_id }}</td>
+                        <td data-label="Status">
                             <span class="badge {% if entry.status == 'COMPLETED' %}badge-success{% else %}badge-warning{% endif %}">
                                 {{ entry.status }}
                             </span>
-                        </td>
-                        <td class="hash-cell">
-                            {{ entry.current_hash }}
-                        </td>
-                        <td class="hash-cell">
-                            {{ entry.previous_hash }}
                         </td>
                     </tr>
                     {% endfor %}

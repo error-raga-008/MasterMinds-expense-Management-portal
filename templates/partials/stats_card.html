@@ -1,0 +1,18 @@
+{#
+  Reusable Stats Card Component
+  Usage:
+  {% from 'partials/stats_card.html' import stats_card %}
+  {{ stats_card(title='Total Expenses', value='24', icon='💸') }}
+#}
+{% macro stats_card(title, value, icon='📊', tone='primary', helper='') -%}
+<article class="card stats-card tone-{{ tone }}" role="status" aria-live="polite">
+    <div class="stats-card-head">
+        <span class="stats-card-icon" aria-hidden="true">{{ icon }}</span>
+        <p class="stats-label">{{ title }}</p>
+    </div>
+    <p class="stats-value">{{ value }}</p>
+    {% if helper %}
+    <p class="stats-helper">{{ helper }}</p>
+    {% endif %}
+</article>
+{%- endmacro %}

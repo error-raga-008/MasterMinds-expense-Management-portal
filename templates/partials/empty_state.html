@@ -1,0 +1,13 @@
+{#
+  Reusable Empty State Component
+  Usage:
+  {% from 'partials/empty_state.html' import empty_state %}
+  {{ empty_state('No groups yet', 'Create your first group to start splitting expenses.', '🧾') }}
+#}
+{% macro empty_state(title='Nothing to show', description='No data is available yet.', illustration='📭') -%}
+<div class="empty-state" role="status" aria-live="polite">
+    <div class="empty-emoji" aria-hidden="true">{{ illustration }}</div>
+    <p class="empty-state-title">{{ title }}</p>
+    <p class="empty-state-description">{{ description }}</p>
+</div>
+{%- endmacro %}
