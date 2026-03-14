@@ -1,137 +1,305 @@
-# MasterMinds Expense Management Portal
+# 🚀 SplitSmart – AI-Inspired Expense Management & Settlement Platform
 
-Flask-based expense management portal with responsive UI, friend management, profile onboarding, and modern client-side interactions.
+SplitSmart is a modern **expense management and settlement platform** designed to simplify group finances with **UPI-style payment simulation, intelligent debt minimization, and an immutable ledger for transaction security**.
 
-## Tech Stack
+The system helps users manage shared expenses, settle debts efficiently, and maintain **tamper-proof financial records**.
 
-- Backend: Python, Flask, SQLite
-- Frontend: HTML, CSS, Vanilla JS
-- UI Enhancements: responsive design, dark/light theme, loading skeletons, live form validation
+Built during a hackathon to demonstrate how **FinTech, cybersecurity, and algorithmic optimization** can enhance everyday financial management.
 
-## Current Features
+---
 
-- User signup and login
-- Profile details dashboard
-- Friend search and request workflow
-- Accept/reject friend requests
-- Upload and view profile picture
-- Responsive mobile-first UI
-- Theme toggle (dark/light) persisted in browser local storage
+# ✨ Key Highlights
 
-## Project Structure (Scalable Frontend Pattern)
+* 🔗 **Immutable Ledger System** – Blockchain-inspired transaction log using SHA256 hashes
+* 💸 **UPI-style Payment Simulation** – Simulated instant payments without external APIs
+* 🧠 **Greedy Algorithm Debt Minimization** – Reduces the number of settlement transactions
+* 👥 **Group Expense Management** – Create groups, add members, and split expenses
+* 🔐 **Secure Transaction Records** – Ledger integrity ensures tamper-proof records
+* 📱 **Mobile Optimized UI** – Fully responsive design for mobile and desktop
+* 🔔 **Notification System** – Real-time UI notifications for settlements and updates
+* 💰 **Hybrid Settlement Options** – Supports both **Cash settlements with approval** and **Online payments**
 
-- `templates/base.html`: common layout and shared shell
-- `templates/login.html`: login page
-- `templates/signup.html`: signup page
-- `templates/dashboard.html`: dashboard page
-- `templates/friends.html`: friends page UI
-- `templates/partials/ui_macros.html`: reusable Jinja components (card, form field, modal)
-- `static/css/main.css`: global design tokens and responsive styles
-- `static/js/main.js`: app-wide JS (flash handling + theme toggle)
-- `static/js/components.js`: reusable modal behavior and component helpers
-- `static/js/auth.js`: signup validation logic (phone, UPI, password match)
-- `static/js/friends.js`: search, skeleton loading, tab behavior, request actions
+---
 
-This split keeps page-specific logic isolated, making new pages/features easier to add.
+# 🧠 Problem Statement
 
-## Reusable Component Pattern
+Managing shared expenses in groups often becomes complicated due to:
 
-Import macros inside templates:
+* multiple transactions
+* unclear debt tracking
+* lack of transparent records
+* inefficient settlement processes
 
-```jinja2
-{% from 'partials/ui_macros.html' import card, form_field, modal %}
+SplitSmart solves this problem by introducing:
+
+* **algorithmic debt optimization**
+* **secure financial logging**
+* **simple payment simulation**
+* **clear financial visibility**
+
+---
+
+# 🏗️ System Architecture
+
+Frontend
+
+* HTML Templates
+* CSS (Responsive UI)
+* JavaScript (Dynamic interactions)
+
+Backend
+
+* FastAPI (Python)
+
+Database
+
+* SQLite
+
+Security Layer
+
+* SHA256 Ledger Hash Chain
+
+---
+
+# 📊 Core Features
+
+## 1️⃣ Smart Group Expense Management
+
+Users can create groups, add members, and track shared expenses easily.
+
+Features include:
+
+* add expenses
+* split bills among members
+* track balances within groups
+* view group expense history
+
+---
+
+## 2️⃣ Greedy Debt Minimization Algorithm
+
+SplitSmart reduces unnecessary transactions using a **Greedy algorithm**.
+
+Example:
+
+Before optimization:
+
+User A → User B ₹200
+User B → User C ₹150
+User C → User A ₹300
+
+After optimization:
+
+User C → User B ₹50
+User C → User A ₹150
+
+This significantly reduces the number of settlements required.
+
+---
+
+## 3️⃣ UPI-Style Payment Simulation
+
+SplitSmart simulates a **real-time UPI payment experience** without using external payment gateways.
+
+Users can:
+
+* select **Pay via UPI**
+* confirm simulated payment
+* instantly settle debts
+
+This allows realistic FinTech demonstrations during hackathons without requiring real banking APIs.
+
+---
+
+## 4️⃣ Cash Settlement with Receiver Approval
+
+For users who prefer offline transactions:
+
+1. Debtor selects **Settle by Cash**
+2. Receiver receives settlement request
+3. Receiver approves the transaction
+4. Ledger is updated automatically
+
+This supports real-world scenarios where not everyone uses digital payments.
+
+---
+
+## 5️⃣ Immutable Ledger System
+
+All settlements are recorded in a **tamper-proof ledger**.
+
+Each transaction contains:
+
+* transaction ID
+* sender
+* receiver
+* amount
+* timestamp
+* previous hash
+* current hash
+
+Hash calculation:
+
+SHA256(
+transaction_id +
+from_user +
+to_user +
+amount +
+timestamp +
+previous_hash
+)
+
+This creates a **chain of transactions similar to blockchain systems**, ensuring data integrity.
+
+---
+
+## 6️⃣ Ledger Verification
+
+The platform verifies the integrity of transaction records by checking the hash chain.
+
+If any transaction is modified, the ledger becomes invalid.
+
+This ensures **secure financial record keeping**.
+
+---
+
+## 7️⃣ Notification System
+
+Users receive notifications for:
+
+* new expenses
+* settlement requests
+* payment confirmations
+* ledger updates
+
+This improves user awareness and collaboration in groups.
+
+---
+
+# 📂 Project Structure
+
+```
+MasterMinds-expense-Management-portal
+
+├── static
+│   ├── css
+│   └── js
+│
+├── templates
+│   ├── partials
+│   ├── base.html
+│   ├── dashboard.html
+│   ├── friends.html
+│   ├── groups.html
+│   ├── group_detail.html
+│   ├── create_group.html
+│   ├── ledger.html
+│   ├── login.html
+│   ├── signup.html
+│   └── profile.html
+│
+├── uploads
+│   └── user profile pictures
+│
+├── app.py
+├── expense_tracker.py
+├── expense_tracker.db
+│
+├── LEDGER_DESIGN.md
+├── LEDGER_FEATURE.md
+├── LEDGER_TESTING.md
+├── LEDGER_README.md
+│
+├── ALGORITHM.md
+├── SETUP_GUIDE.md
+├── requirements.txt
+└── README.md
 ```
 
-Extended reusable macros now available:
+---
 
-- `page_header(title, subtitle)`: standard heading with optional action slot
-- `stats_card(label, value, helper, tone)`: compact metrics cards
-- `data_table(headers)`: reusable table shell with caller rows
-- `empty_state(title, description)`: shared no-data UI
+# ⚙️ Installation & Setup
 
-Use card wrapper:
+Clone the repository:
 
-```jinja2
-{% call card('Section Title', 'Optional subtitle') %}
-	<!-- section content -->
-{% endcall %}
+```
+git clone https://github.com/VishveshSharma2005/MasterMinds-expense-Management-portal.git
 ```
 
-Use page header with actions:
+Navigate to project directory:
 
-```jinja2
-{% call page_header('Friends and Requests', 'Manage your network') %}
-	<button class="btn btn-ghost" type="button">Action</button>
-{% endcall %}
+```
+cd MasterMinds-expense-Management-portal
 ```
 
-Use form field macro:
+Install dependencies:
 
-```jinja2
-{{ form_field('email', 'Email', field_type='email', placeholder='you@example.com', required=true) }}
+```
+pip install -r requirements.txt
 ```
 
-Use reusable modal:
+Run the application:
 
-```jinja2
-<button type="button" data-modal-open="myModal">Open</button>
-
-{% call modal('myModal', 'My Modal Title', 'Optional description') %}
-	<p>Modal content</p>
-{% endcall %}
 ```
-
-`static/js/components.js` handles opening/closing via `data-modal-open` and `data-modal-close`.
-
-## Setup
-
-1. Open terminal in project root.
-2. Install dependencies in your active environment:
-
-```bash
-python -m pip install -r requirements.txt
-```
-
-If your environment is conda `tf_env`, you can run:
-
-```bash
-C:/Users/sharm/anaconda3/Scripts/conda.exe run -p C:/Users/sharm/.conda/envs/tf_env python -m pip install -r requirements.txt
-```
-
-## Run Locally
-
-```bash
 python app.py
 ```
 
-Or with your conda path:
+Open in browser:
 
-```bash
-C:/Users/sharm/anaconda3/Scripts/conda.exe run -p C:/Users/sharm/.conda/envs/tf_env python app.py
+```
+http://localhost:8000
 ```
 
-Visit:
+---
 
-- `http://127.0.0.1:5000`
+# 📱 Demo Flow
 
-## What To Test Now (End-to-End)
+1️⃣ User Signup / Login
+2️⃣ Create Group
+3️⃣ Add Friends
+4️⃣ Add Expense
+5️⃣ Split Bill
+6️⃣ Optimize Settlements
+7️⃣ Pay via UPI Simulation or Cash
+8️⃣ Transaction Recorded in Immutable Ledger
 
-1. Signup with valid details and optional image upload.
-2. Confirm live validation on signup:
-	- Phone must be exactly 10 digits
-	- UPI must follow `name@bank`
-	- Confirm password must match password
-3. Login with the new account.
-4. Open friends page and search users:
-	- Observe loading skeleton while searching
-	- Send request and verify feedback
-5. Accept/reject pending requests and confirm UI updates.
-6. Toggle dark/light mode and refresh page to verify persistence.
+---
 
-## Scalability Notes For Next Features
+# 🔐 Security Features
 
-1. Add one JS module per page/feature under `static/js/`.
-2. Keep shared styles in `main.css`; add sectioned component blocks for new features.
-3. Create reusable Jinja partials for repeated UI pieces (cards, tables, modals).
-4. For larger backend growth, migrate to Flask Blueprints (`auth`, `friends`, `expenses`).
-5. Add automated tests using `pytest` and `Flask` test client before major feature expansion.
+* SHA256 ledger hashing
+* immutable transaction records
+* tamper detection through hash chain
+* secure settlement approvals
+
+---
+
+# 🚀 Future Improvements
+
+* Real UPI gateway integration
+* AI based expense categorization
+* OCR receipt scanning
+* financial analytics dashboard
+* real-time WebSocket notifications
+
+---
+
+# 👨‍💻 Contributors
+
+**Vishvesh Sharma**
+AI/ML & Full Stack Developer
+
+GitHub
+https://github.com/VishveshSharma2005
+
+---
+
+# 🏆 Hackathon Vision
+
+SplitSmart demonstrates how **algorithmic optimization, secure financial logging, and modern FinTech UX** can be combined to build a smarter expense management system for groups.
+
+The goal is to make **shared finances transparent, efficient, and secure**.
+
+---
+
+⭐ If you found this project useful, consider giving it a star!
