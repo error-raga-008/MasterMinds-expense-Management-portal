@@ -1,2 +1,7 @@
 Flask==2.3.3
 Werkzeug==2.3.7
+pyotp==2.9.0
+qrcode==7.4.2
+Pillow==10.4.0
+Authlib==1.6.0
+python-dotenv==1.2.2

@@ -1,0 +1,49 @@
+{% extends 'base.html' %}
+{% from 'partials/ui_macros.html' import form_field %}
+
+{% block title %}Verify 2FA | MasterMinds{% endblock %}
+
+{% block auth_content %}
+<main class="auth-shell">
+    <div class="auth-layout">
+        <section class="auth-promo" aria-label="2FA Verification">
+            <h1>Verify your sign in.</h1>
+            <p>
+                Enter the 6-digit code from your authenticator app to complete login.
+            </p>
+            <ul class="feature-list">
+                <li><span class="feature-dot" aria-hidden="true"></span>Code refreshes every 30 seconds</li>
+                <li><span class="feature-dot" aria-hidden="true"></span>Only valid for your account</li>
+                <li><span class="feature-dot" aria-hidden="true"></span>Protects against password-only attacks</li>
+            </ul>
+        </section>
+
+        <section class="card auth-card" aria-label="2FA Verify Form">
+            <h2 class="auth-title">Two-Factor Verification</h2>
+            <p class="auth-subtitle">Account: {{ user['email'] }}</p>
+
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                <div class="flash-wrap">
+                    {% for category, message in messages %}
+                    <div class="flash {% if category == 'error' %}error{% else %}success{% endif %}" role="status">
+                        <span>{{ message }}</span>
+                        <button type="button" class="flash-close" aria-label="Dismiss message">x</button>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+            {% endwith %}
+
+            <form method="POST" class="form-grid" novalidate>
+                {{ form_field('code', 'Authenticator Code', placeholder='123456', autocomplete='one-time-code', required=true, attrs='inputmode="numeric" pattern="[0-9]{6}" maxlength="6"') }}
+                <button class="btn btn-primary" type="submit">Verify & Login</button>
+            </form>
+
+            <p class="auth-subtitle auth-footnote">
+                Need to reset setup? <a href="{{ url_for('setup_2fa') }}">Re-open 2FA setup</a>
+            </p>
+        </section>
+    </div>
+</main>
+{% endblock %}

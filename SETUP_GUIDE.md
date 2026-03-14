@@ -35,6 +35,17 @@ A simple Flask application with SQLite database for user authentication and prof
    pip install -r requirements.txt
    ```
 
+3. **Create environment config (recommended):**
+   - Copy `.env.example` to `.env`
+   - Set `SECRET_KEY`
+   - Optional: set `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` to enable Google login
+   - Optional: set SMTP vars to enable login alert emails
+
+   Google OAuth callback URL for local dev:
+   ```
+   http://localhost:5000/auth/google/callback
+   ```
+
 ## Running the Application
 
 1. **Navigate to the project directory:**

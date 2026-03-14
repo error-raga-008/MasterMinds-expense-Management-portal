@@ -3,14 +3,27 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
 import sqlite3
 import os
+import io
+import base64
+import smtplib
 from datetime import datetime
 import secrets
 import hashlib
 import random
+from email.message import EmailMessage
+import pyotp
+import qrcode
+from dotenv import load_dotenv
+try:
+    from authlib.integrations.flask_client import OAuth
+except Exception:
+    OAuth = None
 from validation import sanitize_input, validate_name, validate_username, validate_email_format, validate_upi_id
 
+load_dotenv()
+
 app = Flask(__name__)
-app.secret_key = secrets.token_hex(16)
+app.secret_key = os.getenv('SECRET_KEY', '').strip() or secrets.token_hex(16)
 
 # Configuration
 UPLOAD_FOLDER = 'uploads'
@@ -23,6 +36,39 @@ if not os.path.exists(UPLOAD_FOLDER):
 
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max file size
+
+oauth = OAuth(app) if OAuth else None
+GOOGLE_OAUTH_ENABLED = False
+
+if oauth:
+    google_client_id = os.getenv('GOOGLE_CLIENT_ID', '').strip()
+    google_client_secret = os.getenv('GOOGLE_CLIENT_SECRET', '').strip()
+    if google_client_id and google_client_secret:
+        oauth.register(
+            name='google',
+            client_id=google_client_id,
+            client_secret=google_client_secret,
+            server_metadata_url='https://accounts.google.com/.well-known/openid-configuration',
+            client_kwargs={'scope': 'openid email profile'}
+        )
+        GOOGLE_OAUTH_ENABLED = True
+
+
+def _ensure_db_initialized_once():
+    if app.config.get('_DB_INITIALIZED', False):
+        return
+    init_db()
+    app.config['_DB_INITIALIZED'] = True
+
+
+@app.before_request
+def _bootstrap_db_on_first_request():
+    _ensure_db_initialized_once()
+
+
+@app.context_processor
+def inject_auth_flags():
+    return {'google_oauth_enabled': GOOGLE_OAUTH_ENABLED}
 
 
 @app.route('/uploads/<path:filename>')
@@ -52,6 +98,8 @@ def init_db():
             upi_id TEXT NOT NULL,
             password TEXT NOT NULL,
             profile_pic_url TEXT,
+            totp_secret TEXT,
+            totp_verified BOOLEAN DEFAULT 0,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             last_updated TIMESTAMP
         )
@@ -254,6 +302,17 @@ def init_db():
     except Exception as e:
         print(f"Migration check failed: {e}")
 
+    # Migration: Add 2FA columns to users table for existing databases.
+    try:
+        c.execute("PRAGMA table_info(users)")
+        user_columns = [column[1] for column in c.fetchall()]
+        if 'totp_secret' not in user_columns:
+            c.execute("ALTER TABLE users ADD COLUMN totp_secret TEXT")
+        if 'totp_verified' not in user_columns:
+            c.execute("ALTER TABLE users ADD COLUMN totp_verified BOOLEAN DEFAULT 0")
+    except Exception as e:
+        print(f"Users migration check failed: {e}")
+
     # Migration: Payments table compatibility (old DBs used from_user/to_user schema)
     try:
         c.execute("PRAGMA table_info(payments)")
@@ -280,6 +339,169 @@ def init_db():
     
     conn.commit()
     conn.close()
+
+
+def _get_user_by_username(username):
+    conn = get_db()
+    c = conn.cursor()
+    c.execute('SELECT * FROM users WHERE username = ?', (username,))
+    user = c.fetchone()
+    conn.close()
+    return user
+
+
+def _ensure_user_totp_secret(username):
+    user = _get_user_by_username(username)
+    if not user:
+        return None
+
+    existing_secret = user['totp_secret']
+    if existing_secret:
+        return existing_secret
+
+    secret = pyotp.random_base32()
+    conn = get_db()
+    c = conn.cursor()
+    c.execute('UPDATE users SET totp_secret = ?, totp_verified = 0 WHERE username = ?', (secret, username))
+    conn.commit()
+    conn.close()
+    return secret
+
+
+def _send_login_notification_email(user):
+    """Send a login alert email if SMTP settings are configured."""
+    smtp_host = os.getenv('SMTP_HOST', '').strip()
+    smtp_username = os.getenv('SMTP_USERNAME', '').strip()
+    smtp_password = os.getenv('SMTP_PASSWORD', '').strip()
+    from_address = os.getenv('LOGIN_ALERT_FROM', smtp_username).strip()
+
+    if not smtp_host or not smtp_username or not smtp_password or not from_address:
+        return False
+
+    try:
+        smtp_port = int(os.getenv('SMTP_PORT', '587'))
+    except ValueError:
+        smtp_port = 587
+
+    use_tls = os.getenv('SMTP_USE_TLS', '1').strip().lower() not in ('0', 'false', 'no')
+
+    try:
+        message = EmailMessage()
+        message['Subject'] = 'MasterMinds Login Alert'
+        message['From'] = from_address
+        message['To'] = user['email']
+        message.set_content(
+            f"Hi {user['full_name']},\n\n"
+            "A successful login to your MasterMinds account was detected.\n"
+            f"Time: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n"
+            f"Username: {user['username']}\n\n"
+            "If this was not you, please reset your password immediately.\n"
+        )
+
+        with smtplib.SMTP(smtp_host, smtp_port, timeout=15) as server:
+            if use_tls:
+                server.starttls()
+            server.login(smtp_username, smtp_password)
+            server.send_message(message)
+        return True
+    except Exception as e:
+        print(f"Login email notification failed: {e}")
+        return False
+
+
+def _complete_login(user):
+    """Create full authenticated session and clear temporary 2FA session keys."""
+    session['user_id'] = user['username']
+    session['username'] = user['username']
+    session['email'] = user['email']
+
+    session.pop('temp_user_id', None)
+    session.pop('temp_login_source', None)
+
+    _send_login_notification_email(user)
+
+
+def _begin_2fa_pipeline(user, source='password'):
+    """Store temporary session and route user to setup or verify 2FA step."""
+    session['temp_user_id'] = user['username']
+    session['temp_login_source'] = source
+
+    if int(user['totp_verified'] or 0) == 1:
+        return redirect(url_for('verify_2fa'))
+
+    _ensure_user_totp_secret(user['username'])
+    return redirect(url_for('setup_2fa'))
+
+
+def _generate_unique_oauth_username(email):
+    base = email.split('@')[0].lower()
+    base = ''.join(ch if (ch.isalnum() or ch == '_') else '_' for ch in base)
+    base = base.strip('_') or 'user'
+
+    if len(base) < 3:
+        base = (base + 'user')[:3]
+    if len(base) > 30:
+        base = base[:30]
+
+    candidate = base
+    suffix = 1
+
+    conn = get_db()
+    c = conn.cursor()
+    while True:
+        c.execute('SELECT 1 FROM users WHERE username = ?', (candidate,))
+        if not c.fetchone():
+            conn.close()
+            return candidate
+
+        raw_suffix = f"_{suffix}"
+        candidate = f"{base[:30 - len(raw_suffix)]}{raw_suffix}"
+        suffix += 1
+
+
+def _generate_unique_oauth_phone(c):
+    while True:
+        phone = ''.join(str(random.randint(0, 9)) for _ in range(10))
+        c.execute('SELECT 1 FROM users WHERE phone_number = ?', (phone,))
+        if not c.fetchone():
+            return phone
+
+
+def _find_or_create_oauth_user(userinfo):
+    email = (userinfo.get('email') or '').strip().lower()
+    if not email:
+        return None, 'Google account email is required for sign-in.'
+
+    conn = get_db()
+    c = conn.cursor()
+
+    c.execute('SELECT * FROM users WHERE email = ?', (email,))
+    existing = c.fetchone()
+    if existing:
+        conn.close()
+        return existing, None
+
+    username = _generate_unique_oauth_username(email)
+    full_name = sanitize_input((userinfo.get('name') or username).strip())
+    profile_pic_url = (userinfo.get('picture') or '').strip() or None
+    phone_number = _generate_unique_oauth_phone(c)
+    upi_id = f"{username}@oauth"
+    password = generate_password_hash(secrets.token_urlsafe(32))
+
+    c.execute(
+        '''
+            INSERT INTO users (
+                username, email, full_name, phone_number, upi_id, password, profile_pic_url, created_at, last_updated
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ''',
+        (username, email, full_name, phone_number, upi_id, password, profile_pic_url, datetime.now(), None)
+    )
+    conn.commit()
+
+    c.execute('SELECT * FROM users WHERE username = ?', (username,))
+    created = c.fetchone()
+    conn.close()
+    return created, None
 
 
 # ==================== ADVANCED GREEDY SETTLEMENT ALGORITHM ====================
@@ -1004,23 +1226,60 @@ def login():
         
         conn = get_db()
         c = conn.cursor()
-        
+
         # Check if input is email or username
         c.execute('SELECT * FROM users WHERE username = ? OR email = ?', (login_input, login_input))
         user = c.fetchone()
         conn.close()
-        
+
         if user and check_password_hash(user['password'], password):
-            session['user_id'] = user['username']
-            session['username'] = user['username']
-            session['email'] = user['email']
-            flash(f'Welcome {user["username"]}!', 'success')
-            return redirect(url_for('dashboard'))
+            return _begin_2fa_pipeline(user, source='password')
         else:
             flash('Invalid username/email or password!', 'error')
             return redirect(url_for('login'))
     
     return render_template('login.html')
+
+
+@app.route('/auth/google')
+def google_auth_start():
+    if not GOOGLE_OAUTH_ENABLED:
+        flash('Google sign-in is not configured on this server.', 'error')
+        return redirect(url_for('login'))
+
+    try:
+        redirect_uri = url_for('google_auth_callback', _external=True)
+        return oauth.google.authorize_redirect(redirect_uri)
+    except Exception as e:
+        print(f"Google OAuth start failed: {e}")
+        flash('Unable to start Google sign-in right now.', 'error')
+        return redirect(url_for('login'))
+
+
+@app.route('/auth/google/callback')
+def google_auth_callback():
+    if not GOOGLE_OAUTH_ENABLED:
+        flash('Google sign-in is not configured on this server.', 'error')
+        return redirect(url_for('login'))
+
+    try:
+        token = oauth.google.authorize_access_token()
+
+        userinfo = token.get('userinfo') if isinstance(token, dict) else None
+        if not userinfo:
+            userinfo_resp = oauth.google.get('https://openidconnect.googleapis.com/v1/userinfo')
+            userinfo = userinfo_resp.json() if userinfo_resp else {}
+
+        user, err = _find_or_create_oauth_user(userinfo or {})
+        if err:
+            flash(err, 'error')
+            return redirect(url_for('login'))
+
+        return _begin_2fa_pipeline(user, source='google_oauth')
+    except Exception as e:
+        print(f"Google OAuth callback failed: {e}")
+        flash('Google sign-in failed. Please try again.', 'error')
+        return redirect(url_for('login'))
 
 
 @app.route('/dashboard')
@@ -1035,6 +1294,99 @@ def dashboard():
     conn.close()
     
     return render_template('dashboard.html', user=user, demo_mode_done=session.get('demo_setup_done', False))
+
+
+@app.route('/setup-2fa', methods=['GET'])
+def setup_2fa():
+    temp_user_id = session.get('temp_user_id')
+    if not temp_user_id:
+        flash('Please login first to continue with 2FA setup.', 'error')
+        return redirect(url_for('login'))
+
+    user = _get_user_by_username(temp_user_id)
+    if not user:
+        session.pop('temp_user_id', None)
+        flash('Unable to find your account for 2FA setup.', 'error')
+        return redirect(url_for('login'))
+
+    if int(user['totp_verified'] or 0) == 1:
+        return redirect(url_for('verify_2fa'))
+
+    secret = _ensure_user_totp_secret(user['username'])
+    issuer_name = 'MasterMinds Expense Portal'
+    totp = pyotp.TOTP(secret)
+    provisioning_uri = totp.provisioning_uri(name=user['email'], issuer_name=issuer_name)
+
+    qr = qrcode.QRCode(version=1, box_size=8, border=2)
+    qr.add_data(provisioning_uri)
+    qr.make(fit=True)
+    qr_code_mime = 'image/png'
+    buffer = io.BytesIO()
+
+    try:
+        img = qr.make_image(fill_color='black', back_color='white')
+        img.save(buffer, format='PNG')
+    except Exception:
+        # Fallback for environments where Pillow is not installed.
+        from qrcode.image.svg import SvgImage
+        svg_img = qr.make_image(image_factory=SvgImage)
+        svg_img.save(buffer)
+        qr_code_mime = 'image/svg+xml'
+
+    qr_b64 = base64.b64encode(buffer.getvalue()).decode('utf-8')
+
+    return render_template(
+        'setup_2fa.html',
+        user=user,
+        qr_code_data=qr_b64,
+        qr_code_mime=qr_code_mime,
+        totp_secret=secret,
+        app_name=issuer_name
+    )
+
+
+@app.route('/verify-2fa', methods=['GET', 'POST'])
+def verify_2fa():
+    temp_user_id = session.get('temp_user_id')
+    if not temp_user_id:
+        flash('Please login first to verify 2FA.', 'error')
+        return redirect(url_for('login'))
+
+    user = _get_user_by_username(temp_user_id)
+    if not user:
+        session.pop('temp_user_id', None)
+        flash('Unable to verify account. Please login again.', 'error')
+        return redirect(url_for('login'))
+
+    if request.method == 'POST':
+        code = request.form.get('code', '').strip().replace(' ', '')
+
+        if not code or not code.isdigit() or len(code) != 6:
+            flash('Please enter a valid 6-digit authenticator code.', 'error')
+            return redirect(url_for('verify_2fa'))
+
+        secret = user['totp_secret']
+        if not secret:
+            flash('2FA setup is incomplete. Please set up 2FA again.', 'error')
+            return redirect(url_for('setup_2fa'))
+
+        totp = pyotp.TOTP(secret)
+        if not totp.verify(code, valid_window=1):
+            flash('Invalid code. Please try again.', 'error')
+            return redirect(url_for('verify_2fa'))
+
+        if int(user['totp_verified'] or 0) == 0:
+            conn = get_db()
+            c = conn.cursor()
+            c.execute('UPDATE users SET totp_verified = 1 WHERE username = ?', (user['username'],))
+            conn.commit()
+            conn.close()
+
+        _complete_login(user)
+        flash(f'Welcome {user["username"]}!', 'success')
+        return redirect(url_for('dashboard'))
+
+    return render_template('verify_2fa.html', user=user)
 
 
 def _shift_months(dt, delta_months):

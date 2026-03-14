@@ -416,6 +416,14 @@ select.input:focus {
     font-weight: 600;
 }
 
+.validation-msg.success {
+    color: var(--success);
+}
+
+.validation-msg.error {
+    color: var(--danger);
+}
+
 .auth-shell {
     min-height: 100vh;
     display: grid;
@@ -517,6 +525,38 @@ select.input:focus {
 
 .auth-footnote {
     margin: 1rem 0 0;
+}
+
+.twofa-box {
+    margin-top: 0.4rem;
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    background: color-mix(in srgb, var(--surface-soft) 86%, var(--surface));
+    padding: 0.9rem;
+    text-align: center;
+}
+
+.twofa-qr {
+    width: min(240px, 100%);
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    background: #fff;
+    padding: 0.5rem;
+}
+
+.twofa-hint {
+    margin-top: 0.7rem;
+}
+
+.twofa-secret {
+    margin: 0.4rem 0 0;
+    border: 1px dashed var(--border);
+    border-radius: 10px;
+    background: color-mix(in srgb, var(--surface) 86%, var(--surface-soft));
+    padding: 0.6rem;
+    font-weight: 700;
+    font-family: monospace;
+    word-break: break-all;
 }
 
 .dashboard-grid {

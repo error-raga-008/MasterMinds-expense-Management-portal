@@ -1,0 +1,50 @@
+{% extends 'base.html' %}
+
+{% block title %}Setup 2FA | MasterMinds{% endblock %}
+
+{% block auth_content %}
+<main class="auth-shell">
+    <div class="auth-layout">
+        <section class="auth-promo" aria-label="2FA Benefits">
+            <h1>Secure your account with 2FA.</h1>
+            <p>
+                Scan this QR code in Google Authenticator or Authy to enable time-based one-time passwords.
+            </p>
+            <ul class="feature-list">
+                <li><span class="feature-dot" aria-hidden="true"></span>Extra protection beyond password login</li>
+                <li><span class="feature-dot" aria-hidden="true"></span>30-second rotating verification codes</li>
+                <li><span class="feature-dot" aria-hidden="true"></span>Works with all major authenticator apps</li>
+            </ul>
+        </section>
+
+        <section class="card auth-card" aria-label="2FA Setup">
+            <h2 class="auth-title">Setup Multi-Factor Authentication</h2>
+            <p class="auth-subtitle">Scan the QR code using your authenticator app, then continue to verify.</p>
+
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                <div class="flash-wrap">
+                    {% for category, message in messages %}
+                    <div class="flash {% if category == 'error' %}error{% else %}success{% endif %}" role="status">
+                        <span>{{ message }}</span>
+                        <button type="button" class="flash-close" aria-label="Dismiss message">x</button>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+            {% endwith %}
+
+            <div class="twofa-box">
+                <img class="twofa-qr" src="data:{{ qr_code_mime }};base64,{{ qr_code_data }}" alt="Scan QR code for {{ app_name }}">
+                <p class="hint twofa-hint">If QR scan fails, use this secret key:</p>
+                <p class="twofa-secret">{{ totp_secret }}</p>
+            </div>
+
+            <div class="actions mt-16">
+                <a class="btn btn-primary" href="{{ url_for('verify_2fa') }}">I've scanned it, continue</a>
+                <a class="btn btn-ghost" href="{{ url_for('logout') }}">Cancel</a>
+            </div>
+        </section>
+    </div>
+</main>
+{% endblock %}

@@ -42,6 +42,12 @@
                 <button class="btn btn-primary" type="submit">Login</button>
             </form>
 
+            {% if google_oauth_enabled %}
+            <div class="form-grid" style="margin-top: 0.8rem;">
+                <a class="btn btn-ghost" href="{{ url_for('google_auth_start') }}">Continue with Google</a>
+            </div>
+            {% endif %}
+
             <p class="auth-subtitle auth-footnote">
                 New here? <a href="{{ url_for('signup') }}">Create your account</a>
             </p>
