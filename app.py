@@ -682,6 +682,52 @@ def calculate_group_health_metrics(group_id):
     }
 
 
+def get_active_group_ids_for_user(username):
+    """Return all active group ids for a user."""
+    conn = get_db()
+    c = conn.cursor()
+    c.execute("""
+        SELECT DISTINCT group_id
+        FROM groups_members
+        WHERE user_id = ? AND is_active = 1
+    """, (username,))
+    group_ids = [row['group_id'] for row in c.fetchall()]
+    conn.close()
+    return group_ids
+
+
+def aggregate_personal_settlement_matrix(username, friends_set, include_friend_to_friend=False):
+    """
+    Build a directed debt matrix from optimized settlements over all active user groups.
+    Returns nested dict matrix[from_user][to_user] = amount.
+    """
+    valid_people = set(friends_set)
+    valid_people.add(username)
+
+    matrix = {person: {} for person in valid_people}
+    group_ids = get_active_group_ids_for_user(username)
+
+    for gid in group_ids:
+        settlements, _ = advanced_greedy_settlement(gid)
+        for tx in settlements:
+            from_user = tx['from']
+            to_user = tx['to']
+            amount = round(float(tx['amount']), 2)
+
+            if from_user not in valid_people or to_user not in valid_people:
+                continue
+
+            if not include_friend_to_friend and username not in (from_user, to_user):
+                continue
+
+            if from_user not in matrix:
+                matrix[from_user] = {}
+
+            matrix[from_user][to_user] = round(matrix[from_user].get(to_user, 0.0) + amount, 2)
+
+    return matrix
+
+
 # ============= HELPER FUNCTIONS =============
 
 def get_user_friends(username):
@@ -2436,6 +2482,271 @@ def api_group_health(group_id):
 
     metrics = calculate_group_health_metrics(group_id)
     return metrics, 200
+
+
+@app.route('/api/user-expense-insights', methods=['GET'])
+def api_user_expense_insights():
+    if 'user_id' not in session:
+        return {'error': 'Not logged in'}, 401
+
+    conn = get_db()
+    c = conn.cursor()
+    c.execute("""
+        SELECT
+            COALESCE(NULLIF(TRIM(category), ''), 'Other') AS category_name,
+            ROUND(SUM(amount), 2) AS total_amount
+        FROM expenses
+        WHERE paid_by = ?
+        GROUP BY category_name
+        ORDER BY total_amount DESC
+    """, (session['user_id'],))
+
+    rows = c.fetchall()
+    conn.close()
+
+    categories = [row['category_name'] for row in rows]
+    amounts = [float(row['total_amount'] or 0) for row in rows]
+
+    return {
+        'categories': categories,
+        'amounts': amounts
+    }, 200
+
+
+@app.route('/api/user-debt-network', methods=['GET'])
+def api_user_debt_network():
+    if 'user_id' not in session:
+        return {'error': 'Not logged in'}, 401
+
+    username = session['user_id']
+    friends = get_user_friends(username)
+    friends_set = set(friends)
+
+    matrix = aggregate_personal_settlement_matrix(username, friends_set, include_friend_to_friend=False)
+
+    conn = get_db()
+    c = conn.cursor()
+
+    # Include all accepted friends in node list for stable graph rendering.
+    nodes = [{'id': 1, 'label': 'You'}]
+    id_map = {username: 1}
+
+    if friends:
+        placeholders = ','.join(['?'] * len(friends))
+        c.execute(
+            f"""
+            SELECT username, full_name
+            FROM users
+            WHERE username IN ({placeholders})
+            ORDER BY full_name, username
+            """,
+            friends
+        )
+        friend_rows = c.fetchall()
+    else:
+        friend_rows = []
+
+    next_id = 2
+    for row in friend_rows:
+        friend_username = row['username']
+        id_map[friend_username] = next_id
+        nodes.append({'id': next_id, 'label': row['full_name'] or friend_username})
+        next_id += 1
+
+    conn.close()
+
+    edges = []
+    for from_user, inner in matrix.items():
+        for to_user, amount in inner.items():
+            if amount <= 0:
+                continue
+            if from_user not in id_map or to_user not in id_map:
+                continue
+            edges.append({
+                'from': id_map[from_user],
+                'to': id_map[to_user],
+                'label': f"Rs {amount:.2f}",
+                'amount': amount
+            })
+
+    return {
+        'nodes': nodes,
+        'edges': edges
+    }, 200
+
+
+@app.route('/api/user-debt-heatmap', methods=['GET'])
+def api_user_debt_heatmap():
+    if 'user_id' not in session:
+        return {'error': 'Not logged in'}, 401
+
+    username = session['user_id']
+    friends = get_user_friends(username)
+    people = [username] + sorted([f for f in friends if f != username])
+    friends_set = set(friends)
+
+    matrix = aggregate_personal_settlement_matrix(username, friends_set, include_friend_to_friend=True)
+
+    values = []
+    matrix_rows = []
+    for from_user in people:
+        row_values = []
+        for to_user in people:
+            if from_user == to_user:
+                row_values.append(None)
+                continue
+            amount = round(float(matrix.get(from_user, {}).get(to_user, 0.0)), 2)
+            row_values.append(amount)
+            values.append(amount)
+        matrix_rows.append(row_values)
+
+    max_value = max(values) if values else 0
+
+    return {
+        'labels': ['You' if p == username else p for p in people],
+        'users': people,
+        'matrix': matrix_rows,
+        'max_value': max_value,
+        'currency': 'INR'
+    }, 200
+
+
+@app.route('/api/group-debt-network/<int:group_id>', methods=['GET'])
+def api_group_debt_network(group_id):
+    if 'user_id' not in session:
+        return {'error': 'Not logged in'}, 401
+
+    group = get_group_details(group_id, session['user_id'])
+    if not group:
+        return {'error': 'Access denied'}, 403
+
+    settlements, _ = advanced_greedy_settlement(group_id)
+
+    members = group['members']
+    id_map = {}
+    nodes = []
+    next_id = 1
+    for member in members:
+        id_map[member['user_id']] = next_id
+        nodes.append({'id': next_id, 'label': member['full_name'] or member['user_id']})
+        next_id += 1
+
+    edges = []
+    for tx in settlements:
+        from_user = tx['from']
+        to_user = tx['to']
+        amount = round(float(tx['amount']), 2)
+        if from_user not in id_map or to_user not in id_map:
+            continue
+        edges.append({
+            'from': id_map[from_user],
+            'to': id_map[to_user],
+            'label': f"{group['currency']} {amount:.2f}",
+            'amount': amount
+        })
+
+    return {
+        'nodes': nodes,
+        'edges': edges,
+        'currency': group['currency']
+    }, 200
+
+
+@app.route('/api/group-debt-heatmap/<int:group_id>', methods=['GET'])
+def api_group_debt_heatmap(group_id):
+    if 'user_id' not in session:
+        return {'error': 'Not logged in'}, 401
+
+    group = get_group_details(group_id, session['user_id'])
+    if not group:
+        return {'error': 'Access denied'}, 403
+
+    settlements, _ = advanced_greedy_settlement(group_id)
+
+    users = [member['user_id'] for member in group['members']]
+    labels = [member['full_name'] or member['user_id'] for member in group['members']]
+
+    matrix_map = {u: {} for u in users}
+    for tx in settlements:
+        from_user = tx['from']
+        to_user = tx['to']
+        amount = round(float(tx['amount']), 2)
+        if from_user not in matrix_map:
+            matrix_map[from_user] = {}
+        matrix_map[from_user][to_user] = round(matrix_map[from_user].get(to_user, 0.0) + amount, 2)
+
+    values = []
+    matrix_rows = []
+    for from_user in users:
+        row_values = []
+        for to_user in users:
+            if from_user == to_user:
+                row_values.append(None)
+                continue
+            amount = round(float(matrix_map.get(from_user, {}).get(to_user, 0.0)), 2)
+            row_values.append(amount)
+            values.append(amount)
+        matrix_rows.append(row_values)
+
+    max_value = max(values) if values else 0
+
+    return {
+        'labels': labels,
+        'users': users,
+        'matrix': matrix_rows,
+        'max_value': max_value,
+        'currency': group['currency']
+    }, 200
+
+
+@app.route('/api/group-expense-insights/<int:group_id>', methods=['GET'])
+def api_group_expense_insights(group_id):
+    if 'user_id' not in session:
+        return {'error': 'Not logged in'}, 401
+
+    group = get_group_details(group_id, session['user_id'])
+    if not group:
+        return {'error': 'Access denied'}, 403
+
+    conn = get_db()
+    c = conn.cursor()
+    c.execute("""
+        SELECT
+            COALESCE(NULLIF(TRIM(category), ''), 'Other') AS category_name,
+            ROUND(SUM(amount), 2) AS total_amount
+        FROM expenses
+        WHERE group_id = ?
+        GROUP BY category_name
+        ORDER BY total_amount DESC
+    """, (group_id,))
+    rows = c.fetchall()
+    conn.close()
+
+    categories = [row['category_name'] for row in rows]
+    amounts = [float(row['total_amount'] or 0) for row in rows]
+
+    return {
+        'categories': categories,
+        'amounts': amounts,
+        'currency': group['currency']
+    }, 200
+
+
+@app.route('/api/group-simplified-settlements/<int:group_id>', methods=['GET'])
+def api_group_simplified_settlements(group_id):
+    if 'user_id' not in session:
+        return {'error': 'Not logged in'}, 401
+
+    group = get_group_details(group_id, session['user_id'])
+    if not group:
+        return {'error': 'Access denied'}, 403
+
+    settlements, _ = advanced_greedy_settlement(group_id)
+
+    return {
+        'transactions': settlements,
+        'currency': group['currency']
+    }, 200
 
 
 @app.route('/api/groups/<int:group_id>/settle', methods=['GET'])

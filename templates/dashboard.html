@@ -4,75 +4,229 @@
 {% block title %}Dashboard | MasterMinds{% endblock %}
 
 {% block content %}
-<main class="dashboard-grid">
-    {% call card('Welcome, ' ~ user['full_name'] ~ '.', 'Here is your account snapshot and payment identity details.') %}
-        {% call page_header('Profile Overview', 'Your account identity and payment details in one place.') %}
-            <button class="btn btn-ghost" type="button" data-modal-open="quickHelpModal">Quick Help</button>
+<section id="userInsightsRoot" class="fin-dashboard" aria-labelledby="personalAnalyticsTitle" data-current-user="{{ user['username'] }}" data-current-name="{{ user['full_name'] }}">
+    <header class="fin-head">
+        <div>
+            <h1 id="personalAnalyticsTitle" class="page-title">Welcome back, {{ user['full_name'] }}</h1>
+            <p class="section-subtitle section-subtitle-compact">Your personal financial cockpit with real-time debt and spending analytics.</p>
+        </div>
+        <button class="btn btn-ghost" type="button" data-modal-open="quickHelpModal">Quick Help</button>
+    </header>
+
+    <section class="fin-stats-grid" aria-label="Dashboard summary stats">
+        <article class="card section fin-stat-card">
+            <div class="fin-stat-head">
+                <span class="fin-stat-icon" aria-hidden="true">💰</span>
+                <p class="fin-stat-label">Total Expenses</p>
+            </div>
+            <p class="fin-stat-value" id="statTotalExpenses" data-counter-value="0" data-counter-prefix="₹">₹0</p>
+            <p class="fin-stat-help">All expenses you have paid.</p>
+        </article>
+
+        <article class="card section fin-stat-card">
+            <div class="fin-stat-head">
+                <span class="fin-stat-icon" aria-hidden="true">👥</span>
+                <p class="fin-stat-label">Total Groups</p>
+            </div>
+            <p class="fin-stat-value" id="statTotalGroups" data-counter-value="0">0</p>
+            <p class="fin-stat-help">Active groups you are part of.</p>
+        </article>
+
+        <article class="card section fin-stat-card">
+            <div class="fin-stat-head">
+                <span class="fin-stat-icon" aria-hidden="true">🤝</span>
+                <p class="fin-stat-label">Total Friends</p>
+            </div>
+            <p class="fin-stat-value" id="statTotalFriends" data-counter-value="0">0</p>
+            <p class="fin-stat-help">Connected friends in your network.</p>
+        </article>
+
+        <article class="card section fin-stat-card tone-danger">
+            <div class="fin-stat-head">
+                <span class="fin-stat-icon" aria-hidden="true">📉</span>
+                <p class="fin-stat-label">You Owe</p>
+            </div>
+            <p class="fin-stat-value" id="statYouOwe" data-counter-value="0" data-counter-prefix="₹">₹0</p>
+            <p class="fin-stat-help">Pending amount you need to settle.</p>
+        </article>
+
+        <article class="card section fin-stat-card tone-success">
+            <div class="fin-stat-head">
+                <span class="fin-stat-icon" aria-hidden="true">📈</span>
+                <p class="fin-stat-label">You Are Owed</p>
+            </div>
+            <p class="fin-stat-value" id="statYouAreOwed" data-counter-value="0" data-counter-prefix="₹">₹0</p>
+            <p class="fin-stat-help">Amount others owe you.</p>
+        </article>
+    </section>
+
+    <section class="card section fin-actions" aria-label="Quick actions">
+        <h2 class="section-title">Quick Actions</h2>
+        <div class="fin-actions-grid mt-16">
+            <a id="quickAddExpenseBtn" class="btn fin-quick-btn fin-quick-expense" href="{{ url_for('groups_dashboard') }}">Add Expense</a>
+            <a class="btn fin-quick-btn fin-quick-group" href="{{ url_for('create_group') }}">Create Group</a>
+            <a class="btn fin-quick-btn fin-quick-friend" href="{{ url_for('friends') }}">Add Friend</a>
+            <a class="btn fin-quick-btn fin-quick-settle" href="{{ url_for('groups_dashboard') }}">Settle Payment</a>
+        </div>
+    </section>
+
+    <section class="analytics-shell" aria-label="Personal expense analytics">
+        <header class="analytics-head">
+            <h2 class="section-title">Personal Expense Analytics</h2>
+            <p class="section-subtitle section-subtitle-compact">Visual breakdown of your spending and outstanding debt relationships.</p>
+        </header>
+
+        <div class="fin-analytics-grid">
+            <article class="card section analytics-card">
+                <h3 class="analytics-card-title">Personal Expense Insights</h3>
+                <p class="analytics-card-subtitle">Category distribution of your expenses.</p>
+                <div class="chart-fixed-wrap">
+                    <canvas id="userExpenseInsightsChart" role="img" aria-label="Personal expense insights chart"></canvas>
+                </div>
+                <p id="userExpenseInsightsEmpty" class="analytics-empty" hidden>No personal expense data found yet.</p>
+            </article>
+
+            <article class="card section analytics-card fin-balance-card">
+                <h3 class="analytics-card-title">Balance Overview</h3>
+                <p class="analytics-card-subtitle">Your current payable and receivable snapshot.</p>
+                <div class="fin-balance-lines mt-16">
+                    <div class="fin-balance-line">
+                        <span>You Owe</span>
+                        <strong id="balanceOverviewOwe" class="fin-balance-danger">₹0</strong>
+                    </div>
+                    <div class="fin-balance-line">
+                        <span>You Are Owed</span>
+                        <strong id="balanceOverviewOwed" class="fin-balance-success">₹0</strong>
+                    </div>
+                    <div class="fin-balance-line fin-balance-net">
+                        <span>Net Balance</span>
+                        <strong id="balanceOverviewNet">₹0</strong>
+                    </div>
+                </div>
+
+                <h4 class="fin-mini-title mt-16">User Balance Information</h4>
+                <ul id="userBalancesList" class="fin-balance-list" aria-label="User balance information"></ul>
+                <p id="userBalancesEmpty" class="analytics-empty" hidden>No user balances available yet.</p>
+            </article>
+
+            <article class="card section analytics-card">
+                <h3 class="analytics-card-title">Personal Debt Network Graph</h3>
+                <p class="analytics-card-subtitle">Who owes whom between you and your accepted friends.</p>
+                <div id="userDebtNetworkGraph" class="network-fixed-wrap" role="img" aria-label="Personal debt network graph"></div>
+                <p id="userDebtNetworkEmpty" class="analytics-empty" hidden>No debt links found right now.</p>
+            </article>
+
+            <article class="card section analytics-card">
+                <h3 class="analytics-card-title">Personal Debt Heatmap</h3>
+                <p class="analytics-card-subtitle">Darker cells indicate larger pending debt amounts.</p>
+                <div class="table-wrap analytics-table-wrap">
+                    <table id="userDebtHeatmapTable" class="analytics-heatmap-table" aria-label="Personal debt heatmap"></table>
+                </div>
+                <p id="userDebtHeatmapEmpty" class="analytics-empty" hidden>No personal debt matrix to display.</p>
+            </article>
+        </div>
+    </section>
+
+    <section class="fin-bottom-grid" aria-label="Insights and activity">
+        <article class="card section analytics-card">
+            <h3 class="analytics-card-title">Recent Activity</h3>
+            <p class="analytics-card-subtitle">Latest financial actions and collaboration updates.</p>
+            <ul id="recentActivityList" class="fin-activity-list" aria-label="Recent activity feed"></ul>
+            <p id="recentActivityEmpty" class="analytics-empty" hidden>No recent activity available yet.</p>
+        </article>
+
+        <article class="card section analytics-card">
+            <h3 class="analytics-card-title">Smart Suggestion</h3>
+            <p class="analytics-card-subtitle">Actionable recommendation to settle faster.</p>
+            <div class="fin-suggestion-box">
+                <p id="smartSuggestionText" class="fin-suggestion-text">Analyzing your balances to suggest the best next settlement...</p>
+            </div>
+
+            <h4 class="fin-mini-title mt-16">Financial Health Score</h4>
+            <div class="fin-health-score-wrap">
+                <p class="fin-health-score-value"><span id="financialHealthScore" data-counter-value="0">0</span> / 100</p>
+                <div class="group-health-progress" aria-hidden="true">
+                    <div id="financialHealthProgress" class="group-health-progress-fill health-yellow" style="width:0%"></div>
+                </div>
+                <p id="financialHealthHint" class="group-health-summary">Score is based on pending debts, settlements, and expense balance quality.</p>
+            </div>
+        </article>
+    </section>
+
+    <section class="card section analytics-card" aria-label="Group overview">
+        <h3 class="analytics-card-title">Group Overview</h3>
+        <p class="analytics-card-subtitle">Your active groups and net balances at a glance.</p>
+        <div id="groupOverviewGrid" class="fin-group-grid"></div>
+        <p id="groupOverviewEmpty" class="analytics-empty" hidden>No active groups yet. Create your first group to start tracking shared expenses.</p>
+    </section>
+
+    <section class="dashboard-grid fin-profile-secondary" aria-label="Profile overview section">
+        {% call card('Profile Overview', 'Your account identity and payment details in one place.') %}
+            <div class="table-wrap">
+                <table class="profile-table">
+                    <tr>
+                        <th>Email</th>
+                        <td>{{ user['email'] }}</td>
+                    </tr>
+                    <tr>
+                        <th>Username</th>
+                        <td>@{{ user['username'] }}</td>
+                    </tr>
+                    <tr>
+                        <th>Full Name</th>
+                        <td>{{ user['full_name'] }}</td>
+                    </tr>
+                    <tr>
+                        <th>Phone Number</th>
+                        <td>{{ user['phone_number'] }}</td>
+                    </tr>
+                    <tr>
+                        <th>UPI ID</th>
+                        <td>{{ user['upi_id'] }}</td>
+                    </tr>
+                    <tr>
+                        <th>Profile Created</th>
+                        <td>{{ user['created_at'] }}</td>
+                    </tr>
+                    <tr>
+                        <th>Last Updated</th>
+                        <td>{{ user['last_updated'] if user['last_updated'] else 'Never' }}</td>
+                    </tr>
+                </table>
+            </div>
         {% endcall %}
-        <div class="table-wrap">
-            <table class="profile-table">
-                <tr>
-                    <th>Email</th>
-                    <td>{{ user['email'] }}</td>
-                </tr>
-                <tr>
-                    <th>Username</th>
-                    <td>@{{ user['username'] }}</td>
-                </tr>
-                <tr>
-                    <th>Full Name</th>
-                    <td>{{ user['full_name'] }}</td>
-                </tr>
-                <tr>
-                    <th>Phone Number</th>
-                    <td>{{ user['phone_number'] }}</td>
-                </tr>
-                <tr>
-                    <th>UPI ID</th>
-                    <td>{{ user['upi_id'] }}</td>
-                </tr>
-                <tr>
-                    <th>Profile Created</th>
-                    <td>{{ user['created_at'] }}</td>
-                </tr>
-                <tr>
-                    <th>Last Updated</th>
-                    <td>{{ user['last_updated'] if user['last_updated'] else 'Never' }}</td>
-                </tr>
-            </table>
-        </div>
-    {% endcall %}
 
-    <aside class="card section" aria-label="User Identity Card">
-        <h2 class="section-title">Identity Card</h2>
-        {% if user['profile_pic_url'] %}
-            <img class="avatar-large" src="{{ user['profile_pic_url'] }}" alt="{{ user['full_name'] }}">
-        {% else %}
-            <div class="avatar-fallback" aria-hidden="true">{{ user['full_name'][0] }}</div>
-        {% endif %}
-
-        <p class="identity-name">{{ user['full_name'] }}</p>
-        <p class="identity-handle">@{{ user['username'] }}</p>
-
-        <p class="inline-metadata">
-            This profile is used across friend requests and shared expense interactions.
-        </p>
-
-        <div class="actions mt-16">
-            <button
-                id="enableDemoModeBtn"
-                class="btn btn-primary"
-                type="button"
-                {% if demo_mode_done %}disabled aria-disabled="true"{% endif %}
-            >✨ Enable Demo Mode</button>
-            <a class="btn btn-primary" href="{{ url_for('friends') }}">Manage Friends</a>
-            <a class="btn btn-ghost" href="{{ url_for('monthly_trend_page') }}">View Spending Trends</a>
+        <aside class="card section" aria-label="User identity card">
+            <h2 class="section-title">Identity Card</h2>
             {% if user['profile_pic_url'] %}
-            <a class="btn btn-ghost" href="{{ user['profile_pic_url'] }}" target="_blank" rel="noopener noreferrer">Open Picture</a>
+                <img class="avatar-large" src="{{ user['profile_pic_url'] }}" alt="{{ user['full_name'] }}">
+            {% else %}
+                <div class="avatar-fallback" aria-hidden="true">{{ user['full_name'][0] }}</div>
             {% endif %}
-        </div>
-    </aside>
-</main>
+
+            <p class="identity-name">{{ user['full_name'] }}</p>
+            <p class="identity-handle">@{{ user['username'] }}</p>
+
+            <p class="inline-metadata">
+                This profile is used across friend requests and shared expense interactions.
+            </p>
+
+            <div class="actions mt-16">
+                <button
+                    id="enableDemoModeBtn"
+                    class="btn btn-primary"
+                    type="button"
+                    {% if demo_mode_done %}disabled aria-disabled="true"{% endif %}
+                >✨ Enable Demo Mode</button>
+                <a class="btn btn-primary" href="{{ url_for('friends') }}">Manage Friends</a>
+                <a class="btn btn-ghost" href="{{ url_for('monthly_trend_page') }}">View Spending Trends</a>
+                {% if user['profile_pic_url'] %}
+                <a class="btn btn-ghost" href="{{ user['profile_pic_url'] }}" target="_blank" rel="noopener noreferrer">Open Picture</a>
+                {% endif %}
+            </div>
+        </aside>
+    </section>
+</section>
 
 {% call modal('quickHelpModal', 'Dashboard Quick Help', 'Reusable modal example for future features.') %}
 <ul class="modal-list">
@@ -84,6 +238,7 @@
 {% endblock %}
 
 {% block script_extra %}
+<script src="{{ url_for('static', filename='js/user_insights.js') }}"></script>
 <script>
 (function () {
     function showToast(message, isError) {

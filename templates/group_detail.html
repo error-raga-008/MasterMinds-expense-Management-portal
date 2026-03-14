@@ -39,28 +39,6 @@
         </div>
     </section>
 
-    <section class="card group-health-card" aria-labelledby="group-health-title">
-        <div class="group-health-head">
-            <h2 id="group-health-title" class="section-title">Group Financial Health Score</h2>
-            <p class="section-subtitle section-subtitle-compact">How balanced and settled this group is right now.</p>
-        </div>
-
-        <div class="group-health-score-row">
-            <span id="group-health-score" class="group-health-score-value">--</span>
-            <span class="group-health-score-max">/ 100</span>
-        </div>
-
-        <div class="group-health-progress" aria-label="Group health score progress">
-            <div id="group-health-progress-fill" class="group-health-progress-fill"></div>
-        </div>
-
-        <p id="group-health-summary" class="group-health-summary">Loading health insights...</p>
-
-        <ul id="group-health-insights" class="group-health-insights">
-            <li>Loading insights...</li>
-        </ul>
-    </section>
-
     <div class="group-tabs" role="tablist" aria-label="Group tabs">
         <button onclick="switchTab('expenses')" class="tab-button active" data-tab="expenses" type="button">
             📋 Expenses
@@ -292,6 +270,75 @@
             </div>
         </div>
     </div>
+
+    <section class="card group-health-card" aria-labelledby="group-health-title">
+        <div class="group-health-head">
+            <h2 id="group-health-title" class="section-title">Group Financial Health Score</h2>
+            <p class="section-subtitle section-subtitle-compact">How balanced and settled this group is right now.</p>
+        </div>
+
+        <div class="group-health-score-row">
+            <span id="group-health-score" class="group-health-score-value">--</span>
+            <span class="group-health-score-max">/ 100</span>
+        </div>
+
+        <div class="group-health-progress" aria-label="Group health score progress">
+            <div id="group-health-progress-fill" class="group-health-progress-fill"></div>
+        </div>
+
+        <p id="group-health-summary" class="group-health-summary">Loading health insights...</p>
+
+        <ul id="group-health-insights" class="group-health-insights">
+            <li>Loading insights...</li>
+        </ul>
+    </section>
+
+    <section id="groupInsightsRoot"
+             class="analytics-shell"
+             data-group-id="{{ group.group_id }}"
+             data-currency="{{ group.currency }}"
+             aria-labelledby="groupAnalyticsTitle">
+        <header class="analytics-head">
+            <h2 id="groupAnalyticsTitle" class="section-title">Group Financial Insights</h2>
+            <p class="section-subtitle section-subtitle-compact">Network, heatmap, and spending analytics for the whole group.</p>
+        </header>
+
+        <div class="analytics-grid-two">
+            <article class="card section analytics-card">
+                <h3 class="analytics-card-title">Group Debt Network Graph</h3>
+                <p class="analytics-card-subtitle">Optimized pay-flow between members based on current balances.</p>
+                <div id="groupDebtNetworkGraph" class="network-fixed-wrap" role="img" aria-label="Group debt network graph"></div>
+                <p id="groupDebtNetworkEmpty" class="analytics-empty" hidden>No debt links in this group right now.</p>
+            </article>
+
+            <article class="card section analytics-card">
+                <h3 class="analytics-card-title">Group Debt Heatmap</h3>
+                <p class="analytics-card-subtitle">Color intensity grows with debt amount between members.</p>
+                <div class="table-wrap analytics-table-wrap">
+                    <table id="groupDebtHeatmapTable" class="analytics-heatmap-table" aria-label="Group debt heatmap"></table>
+                </div>
+                <p id="groupDebtHeatmapEmpty" class="analytics-empty" hidden>No group debt matrix available.</p>
+            </article>
+        </div>
+
+        <div class="analytics-grid-single">
+            <article class="card section analytics-card">
+                <h3 class="analytics-card-title">Group Expense Insights</h3>
+                <p class="analytics-card-subtitle">Category distribution of expenses in this group.</p>
+                <div class="chart-fixed-wrap">
+                    <canvas id="groupExpenseInsightsChart" role="img" aria-label="Group expense insights chart"></canvas>
+                </div>
+                <p id="groupExpenseInsightsEmpty" class="analytics-empty" hidden>No categorized expense data available.</p>
+            </article>
+
+            <article class="card section analytics-card">
+                <h3 class="analytics-card-title">Simplified Debt Transactions</h3>
+                <p class="analytics-card-subtitle">Greedy-optimized settlement sequence for minimum transfers.</p>
+                <div id="groupSimplifiedTransactionsList" class="analytics-tx-list"></div>
+                <p id="groupSimplifiedTransactionsEmpty" class="analytics-empty" hidden>Everyone is already settled.</p>
+            </article>
+        </div>
+    </section>
 
 
 <!-- Add Expense Modal -->
@@ -1258,4 +1305,5 @@ document.querySelectorAll('input[name="upiAmountMode"]').forEach((radio) => {
     });
 });
 </script>
+<script src="{{ url_for('static', filename='js/group_insights.js') }}"></script>
 {% endblock %}
