@@ -51,14 +51,14 @@
             <div class="avatar-fallback" aria-hidden="true">{{ user['full_name'][0] }}</div>
         {% endif %}
 
-        <p style="margin: 0.9rem 0 0.2rem; font-weight: 800; font-size: 1.1rem;">{{ user['full_name'] }}</p>
-        <p style="margin: 0; color: var(--muted);">@{{ user['username'] }}</p>
+        <p class="identity-name">{{ user['full_name'] }}</p>
+        <p class="identity-handle">@{{ user['username'] }}</p>
 
         <p class="inline-metadata">
             This profile is used across friend requests and shared expense interactions.
         </p>
 
-        <div class="actions" style="margin-top: 1rem;">
+        <div class="actions mt-16">
             <a class="btn btn-primary" href="{{ url_for('friends') }}">Manage Friends</a>
             {% if user['profile_pic_url'] %}
             <a class="btn btn-ghost" href="{{ user['profile_pic_url'] }}" target="_blank" rel="noopener noreferrer">Open Picture</a>
@@ -68,7 +68,7 @@
 </main>
 
 {% call modal('quickHelpModal', 'Dashboard Quick Help', 'Reusable modal example for future features.') %}
-<ul style="margin: 0; padding-left: 1rem; line-height: 1.6;">
+<ul class="modal-list">
     <li>Use Friends page to send and respond to requests.</li>
     <li>Theme toggle is available at bottom-right and stays saved.</li>
     <li>Add new pages by reusing macros in templates/partials/ui_macros.html.</li>

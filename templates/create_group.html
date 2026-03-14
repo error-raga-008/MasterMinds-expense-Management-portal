@@ -3,217 +3,86 @@
 {% block title %}Create Group - MasterMinds{% endblock %}
 
 {% block content %}
-<div class="container" style="max-width: 600px; margin: 2rem auto;">
-    <div id="floatingToast" style="
-        position: fixed;
-        top: 1.25rem;
-        right: 1.25rem;
-        min-width: 260px;
-        max-width: 360px;
-        padding: 0.85rem 1rem;
-        border-radius: 0.6rem;
-        color: #fff;
-        font-weight: 600;
-        box-shadow: 0 12px 24px rgba(0,0,0,0.16);
-        z-index: 2200;
-        opacity: 0;
-        transform: translateY(-12px);
-        pointer-events: none;
-        transition: opacity 0.25s ease, transform 0.25s ease;
-        background: linear-gradient(135deg, #16a34a, #15803d);
-    " aria-live="polite"></div>
+<div class="container create-group-shell">
+    <div id="floatingToast" class="floating-toast" aria-live="polite"></div>
 
-    <!-- Header -->
-    <div style="text-align: center; margin-bottom: 2rem;">
-        <h1 style="margin: 0; font-size: 2rem; font-weight: 600;">Create Group</h1>
-        <p style="margin: 0.5rem 0 0; color: #666;">Set up a new group to split expenses</p>
-    </div>
+    <header class="create-group-header">
+        <h1>Create Group</h1>
+        <p>Set up a new group to split expenses with friends.</p>
+    </header>
 
-    <!-- Form Card -->
-    <div style="
-        background: white;
-        border: 1px solid #e0e0e0;
-        border-radius: 0.75rem;
-        padding: 2rem;
-    ">
+    <div class="create-group-card card">
         <form id="createGroupForm">
-            <!-- Group Name -->
-            <div style="margin-bottom: 1.5rem;">
-                <label style="
-                    display: block;
-                    margin-bottom: 0.5rem;
-                    font-weight: 600;
-                    color: #333;
-                ">
+            <div class="field-block">
+                <label class="field-label">
                     Group Name *
                 </label>
-                <input type="text" id="groupName" name="group_name" maxlength="100" required style="
-                    width: 100%;
-                    padding: 0.75rem;
-                    border: 1px solid #ddd;
-                    border-radius: 0.4rem;
-                    font-size: 0.95rem;
-                    box-sizing: border-box;
-                    transition: border-color 0.3s;
-                " onfocus="this.style.borderColor='#007BFF'" onblur="this.style.borderColor='#ddd'">
-                <p style="margin: 0.3rem 0 0; font-size: 0.85rem; color: #999;">E.g., "Trip to Bali", "Apartment Rent"</p>
+                <input class="input" type="text" id="groupName" name="group_name" maxlength="100" required>
+                <p class="hint">E.g., "Trip to Bali", "Apartment Rent"</p>
             </div>
 
-            <!-- Description -->
-            <div style="margin-bottom: 1.5rem;">
-                <label style="
-                    display: block;
-                    margin-bottom: 0.5rem;
-                    font-weight: 600;
-                    color: #333;
-                ">
+            <div class="field-block">
+                <label class="field-label">
                     Description
                 </label>
-                <textarea id="groupDescription" name="description" maxlength="500" rows="3" style="
-                    width: 100%;
-                    padding: 0.75rem;
-                    border: 1px solid #ddd;
-                    border-radius: 0.4rem;
-                    font-size: 0.95rem;
-                    box-sizing: border-box;
-                    transition: border-color 0.3s;
-                    font-family: inherit;
-                " onfocus="this.style.borderColor='#007BFF'" onblur="this.style.borderColor='#ddd'"></textarea>
-                <p style="margin: 0.3rem 0 0; font-size: 0.85rem; color: #999;">Optional: Add context about this group</p>
+                <textarea class="input textarea" id="groupDescription" name="description" maxlength="500" rows="3"></textarea>
+                <p class="hint">Optional: Add context about this group.</p>
             </div>
 
-            <!-- Currency -->
-            <div style="margin-bottom: 1.5rem;">
-                <label style="
-                    display: block;
-                    margin-bottom: 0.5rem;
-                    font-weight: 600;
-                    color: #333;
-                ">
+            <div class="field-block">
+                <label class="field-label">
                     Currency *
                 </label>
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); gap: 0.75rem;">
+                <div class="currency-grid">
                     {% for currency in ['INR', 'USD', 'GBP', 'EUR', 'AUD'] %}
-                    <label style="
-                        display: flex;
-                        align-items: center;
-                        padding: 0.75rem;
-                        border: 2px solid #e0e0e0;
-                        border-radius: 0.4rem;
-                        cursor: pointer;
-                        transition: all 0.3s;
-                    " onmouseover="this.style.borderColor='#ddd'" onmouseout="this.style.borderColor='#e0e0e0'">
-                        <input type="radio" name="currency" value="{{ currency }}" {% if currency == 'INR' %}checked{% endif %} style="
-                            margin-right: 0.5rem;
-                            cursor: pointer;
-                        ">
-                        <span style="font-weight: 500;">{{ currency }}</span>
+                    <label class="currency-option">
+                        <input type="radio" name="currency" value="{{ currency }}" {% if currency == 'INR' %}checked{% endif %}>
+                        <span>{{ currency }}</span>
                     </label>
                     {% endfor %}
                 </div>
             </div>
 
-            <!-- Friends Selection -->
             {% if friends %}
-            <div style="margin-bottom: 1.5rem;">
-                <label style="
-                    display: block;
-                    margin-bottom: 0.5rem;
-                    font-weight: 600;
-                    color: #333;
-                ">
+            <div class="field-block">
+                <label class="field-label">
                     Add Friends
                 </label>
-                <div style="
-                    border: 1px solid #ddd;
-                    border-radius: 0.4rem;
-                    padding: 0;
-                    max-height: 250px;
-                    overflow-y: auto;
-                ">
+                <div class="friend-picker">
                     {% for friend in friends %}
-                    <label style="
-                        display: flex;
-                        align-items: center;
-                        padding: 0.75rem;
-                        border-bottom: 1px solid #e0e0e0;
-                        cursor: pointer;
-                        hover_bg: #f9f9f9;
-                    " onmouseover="this.style.backgroundColor='#f9f9f9'" onmouseout="this.style.backgroundColor='transparent'">
-                        <input type="checkbox" class="friend-checkbox" value="{{ friend.username }}" style="
-                            margin-right: 0.75rem;
-                            width: 18px;
-                            height: 18px;
-                            cursor: pointer;
-                        ">
-                        <div>
-                            <div style="font-weight: 500; color: #333;">{{ friend.full_name }}</div>
-                            <div style="font-size: 0.85rem; color: #999;">@{{ friend.username }}</div>
+                    <label class="friend-option">
+                        <input type="checkbox" class="friend-checkbox" value="{{ friend.username }}">
+                        <div class="friend-text">
+                            <div class="friend-name">{{ friend.full_name }}</div>
+                            <div class="friend-handle">@{{ friend.username }}</div>
                         </div>
                     </label>
                     {% endfor %}
                 </div>
-                <p style="margin: 0.5rem 0 0; font-size: 0.85rem; color: #999;">
-                    You can add more members later
-                </p>
+                <p class="hint">You can add more members later.</p>
             </div>
             {% else %}
-            <div style="
-                padding: 1.5rem;
-                background: #f9f9f9;
-                border-radius: 0.4rem;
-                border-left: 4px solid #FF9800;
-                margin-bottom: 1.5rem;
-            ">
-                <p style="margin: 0; color: #666; font-size: 0.9rem;">
+            <div class="create-group-note create-group-note-warning">
+                <p>
                     <strong>No friends yet?</strong> Add friends in your friends list to include them in groups. You can also add members later by sharing the group invite link.
                 </p>
             </div>
             {% endif %}
 
-            <!-- Form Actions -->
-            <div style="display: flex; gap: 1rem; margin-top: 2rem;">
-                <a href="{{ url_for('groups_dashboard') }}" style="
-                    flex: 1;
-                    padding: 0.75rem;
-                    background: #f0f0f0;
-                    color: #333;
-                    text-decoration: none;
-                    border-radius: 0.4rem;
-                    text-align: center;
-                    font-weight: 500;
-                    transition: background 0.3s;
-                " onmouseover="this.style.background='#e0e0e0'" onmouseout="this.style.background='#f0f0f0'">
+            <div class="create-group-actions">
+                <a href="{{ url_for('groups_dashboard') }}" class="btn btn-ghost">
                     Back
                 </a>
-                <button type="submit" style="
-                    flex: 1;
-                    padding: 0.75rem;
-                    background: #4CAF50;
-                    color: white;
-                    border: none;
-                    border-radius: 0.4rem;
-                    font-weight: 500;
-                    cursor: pointer;
-                    transition: background 0.3s;
-                " onmouseover="this.style.background='#45a049'" onmouseout="this.style.background='#4CAF50'">
+                <button type="submit" class="btn btn-primary">
                     Create Group
                 </button>
             </div>
         </form>
     </div>
 
-    <!-- Info Box -->
-    <div style="
-        margin-top: 2rem;
-        padding: 1.5rem;
-        background: #E8F5E9;
-        border-radius: 0.5rem;
-        border-left: 4px solid #4CAF50;
-        color: #2E7D32;
-    ">
-        <div style="font-weight: 600; margin-bottom: 0.5rem;">💡 Tip</div>
-        <p style="margin: 0; font-size: 0.9rem;">
+    <div class="create-group-note create-group-note-success">
+        <div class="create-group-note-title">Tip</div>
+        <p>
             After creating a group, you'll get an invite link you can share with anyone - they don't need to be friends first!
         </p>
     </div>
@@ -280,16 +149,4 @@ document.getElementById('createGroupForm').onsubmit = function(e) {
     });
 };
 </script>
-
-<style>
-    .container {
-        padding: 0 1rem;
-    }
-
-    @media (max-width: 768px) {
-        .container {
-            max-width: 100% !important;
-        }
-    }
-</style>
 {% endblock %}

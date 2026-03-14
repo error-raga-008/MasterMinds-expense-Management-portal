@@ -3,160 +3,77 @@
 {% block title %}{{ group.group_name }} - MasterMinds{% endblock %}
 
 {% block content %}
-<div class="container" style="max-width: 1200px; margin-top: 2rem;">
-    <!-- Group Header -->
-    <div style="
-        background: white;
-        border: 1px solid #e0e0e0;
-        border-radius: 0.75rem;
-        padding: 2rem;
-        margin-bottom: 2rem;
-    ">
-        <div style="display: flex; justify-content: space-between; align-items: start;">
-            <div>
-                <h1 style="margin: 0 0 0.5rem; font-size: 2rem; font-weight: 600;">{{ group.group_name }}</h1>
-                <p style="margin: 0; color: #666; font-size: 0.95rem;">{{ group.description or 'No description' }}</p>
-                <div style="margin-top: 1rem; display: flex; gap: 2rem; font-size: 0.9rem; color: #666;">
-                    <div>
-                        <span style="color: #999;">Currency:</span>
-                        <span style="font-weight: 600; color: #333;">{{ group.currency }}</span>
-                    </div>
-                    <div>
-                        <span style="color: #999;">Members:</span>
-                        <span style="font-weight: 600; color: #333;">{{ group.members|length }}</span>
-                    </div>
-                    <div>
-                        <span style="color: #999;">Created by:</span>
-                        <span style="font-weight: 600; color: #333;">{{ group.created_by }}</span>
-                    </div>
+<div class="container group-detail-shell">
+    <section class="card group-hero">
+        <div class="group-hero-content">
+            <h1 class="group-hero-title">{{ group.group_name }}</h1>
+            <p class="group-hero-description">{{ group.description or 'No description' }}</p>
+            <div class="group-meta-grid">
+                <div class="group-meta-item">
+                    <span class="group-meta-label">Currency</span>
+                    <span class="group-meta-value">{{ group.currency }}</span>
+                </div>
+                <div class="group-meta-item">
+                    <span class="group-meta-label">Members</span>
+                    <span class="group-meta-value">{{ group.members|length }}</span>
+                </div>
+                <div class="group-meta-item">
+                    <span class="group-meta-label">Created By</span>
+                    <span class="group-meta-value">{{ group.created_by }}</span>
                 </div>
             </div>
-            {% if group.user_role == 'creator' %}
-            <button onclick="settleUpGroup({{ group.group_id }})" style="
-                background: #FF9800;
-                color: white;
-                padding: 0.75rem 1.5rem;
-                border: none;
-                border-radius: 0.5rem;
-                cursor: pointer;
-                font-weight: 500;
-                transition: background 0.3s;
-            " onmouseover="this.style.background='#e68900'" onmouseout="this.style.background='#FF9800'">
-                💰 Settle Up
-            </button>
-            {% endif %}
         </div>
-    </div>
+        {% if group.user_role == 'creator' %}
+        <button onclick="settleUpGroup({{ group.group_id }})" class="btn btn-warning" type="button">
+            Settle Up
+        </button>
+        {% endif %}
+    </section>
 
-    <!-- Tab Navigation -->
-    <div style="
-        border-bottom: 2px solid #e0e0e0;
-        margin-bottom: 2rem;
-        display: flex;
-        gap: 2rem;
-    ">
-        <button onclick="switchTab('expenses')" class="tab-button active" data-tab="expenses" style="
-            padding: 1rem 0;
-            border: none;
-            background: none;
-            cursor: pointer;
-            font-size: 1rem;
-            font-weight: 500;
-            color: #333;
-            border-bottom: 3px solid #007BFF;
-        ">
+    <div class="group-tabs" role="tablist" aria-label="Group tabs">
+        <button onclick="switchTab('expenses')" class="tab-button active" data-tab="expenses" type="button">
             📋 Expenses
         </button>
-        <button onclick="switchTab('members')" class="tab-button" data-tab="members" style="
-            padding: 1rem 0;
-            border: none;
-            background: none;
-            cursor: pointer;
-            font-size: 1rem;
-            font-weight: 500;
-            color: #999;
-            border-bottom: 3px solid transparent;
-        ">
+        <button onclick="switchTab('members')" class="tab-button" data-tab="members" type="button">
             👥 Members
         </button>
-        <button onclick="switchTab('settlement')" class="tab-button" data-tab="settlement" style="
-            padding: 1rem 0;
-            border: none;
-            background: none;
-            cursor: pointer;
-            font-size: 1rem;
-            font-weight: 500;
-            color: #999;
-            border-bottom: 3px solid transparent;
-        ">
+        <button onclick="switchTab('settlement')" class="tab-button" data-tab="settlement" type="button">
             💵 Settlement
         </button>
-        <button onclick="switchTab('ledger')" class="tab-button" data-tab="ledger" style="
-            padding: 1rem 0;
-            border: none;
-            background: none;
-            cursor: pointer;
-            font-size: 1rem;
-            font-weight: 500;
-            color: #999;
-            border-bottom: 3px solid transparent;
-        ">
+        <button onclick="switchTab('ledger')" class="tab-button" data-tab="ledger" type="button">
             📊 Ledger
         </button>
     </div>
 
-    <!-- Expenses Tab -->
-    <div id="expenses-tab" class="tab-content" style="display: block;">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
-            <h2 style="margin: 0; font-size: 1.3rem;">Group Expenses</h2>
-            <button onclick="openAddExpenseModal({{ group.group_id }})" style="
-                background: #4CAF50;
-                color: white;
-                padding: 0.75rem 1.5rem;
-                border: none;
-                border-radius: 0.5rem;
-                cursor: pointer;
-                font-weight: 500;
-            ">
+    <div id="expenses-tab" class="tab-content active-tab">
+        <div class="section-heading-row">
+            <h2 class="section-title">Group Expenses</h2>
+            <button onclick="openAddExpenseModal({{ group.group_id }})" class="btn btn-primary" type="button">
                 + Add Expense
             </button>
         </div>
 
         {% if expenses %}
-        <div style="background: white; border-radius: 0.75rem; border: 1px solid #e0e0e0;">
+        <div class="card list-panel">
             {% for expense in expenses %}
-            <div style="
-                padding: 1.5rem;
-                border-bottom: 1px solid #e0e0e0;
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-            ">
+            <div class="list-row expense-row">
                 <div>
-                    <h4 style="margin: 0 0 0.3rem; font-size: 1rem; color: #333;">{{ expense.description }}</h4>
-                    <p style="margin: 0; font-size: 0.85rem; color: #999;">
+                    <h4 class="row-title">{{ expense.description }}</h4>
+                    <p class="row-subtitle">
                         Paid by <strong>{{ expense.paid_by }}</strong> on {{ expense.created_at[:10] }}
                         {% if expense.category %}
                         • {{ expense.category }}
                         {% endif %}
                     </p>
-                    <p style="margin: 0.3rem 0 0; font-size: 0.85rem; color: #666;">
-                        Split: <span style="background: #f0f0f0; padding: 0.2rem 0.5rem; border-radius: 0.3rem;">{{ expense.split_method|capitalize }}</span>
+                    <p class="row-subtitle">
+                        Split: <span class="pill">{{ expense.split_method|capitalize }}</span>
                     </p>
                 </div>
-                <div style="text-align: right;">
-                    <div style="font-size: 1.3rem; font-weight: 600; color: #333;">{{ group.currency }} {{ "%.2f"|format(expense.amount) }}</div>
-                    <div style="margin-top: 0.5rem;">
+                <div class="expense-amount-wrap">
+                    <div class="expense-amount">{{ group.currency }} {{ "%.2f"|format(expense.amount) }}</div>
+                    <div class="mt-8">
                         {% if expense.paid_by == session.get('user_id') %}
-                        <button onclick="deleteExpense({{ group.group_id }}, {{ expense.id }})" style="
-                            background: #f44336;
-                            color: white;
-                            padding: 0.4rem 0.8rem;
-                            border: none;
-                            border-radius: 0.3rem;
-                            cursor: pointer;
-                            font-size: 0.85rem;
-                        ">
+                        <button onclick="deleteExpense({{ group.group_id }}, {{ expense.id }})" class="btn btn-danger btn-sm" type="button">
                             Delete
                         </button>
                         {% endif %}
@@ -166,53 +83,32 @@
             {% endfor %}
         </div>
         {% else %}
-        <div style="
-            text-align: center;
-            padding: 2rem;
-            background: #f5f5f5;
-            border-radius: 0.5rem;
-            border: 2px dashed #ddd;
-        ">
-            <div style="font-size: 2rem; margin-bottom: 0.5rem;">📝</div>
-            <p style="margin: 0; color: #666;">No expenses yet. Add one to get started!</p>
+        <div class="empty-state">
+            <div class="empty-emoji" aria-hidden="true">📝</div>
+            <p class="empty-state-description">No expenses yet. Add one to get started!</p>
         </div>
         {% endif %}
     </div>
 
-    <!-- Members Tab -->
-    <div id="members-tab" class="tab-content" style="display: none;">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
-            <h2 style="margin: 0; font-size: 1.3rem;">Group Members</h2>
+    <div id="members-tab" class="tab-content">
+        <div class="section-heading-row">
+            <h2 class="section-title">Group Members</h2>
             {% if group.user_role == 'creator' %}
-            <button onclick="openAddMemberModal({{ group.group_id }})" style="
-                background: #4CAF50;
-                color: white;
-                padding: 0.75rem 1.5rem;
-                border: none;
-                border-radius: 0.5rem;
-                cursor: pointer;
-                font-weight: 500;
-            ">
+            <button onclick="openAddMemberModal({{ group.group_id }})" class="btn btn-primary" type="button">
                 + Add Member
             </button>
             {% endif %}
         </div>
 
-        <div style="background: white; border-radius: 0.75rem; border: 1px solid #e0e0e0;">
+        <div class="card list-panel">
             {% for member in group.members %}
-            <div style="
-                padding: 1.5rem;
-                border-bottom: 1px solid #e0e0e0;
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-            ">
+            <div class="list-row member-row">
                 <div>
-                    <h4 style="margin: 0 0 0.3rem; font-size: 1rem; color: #333;">{{ member.user_id }}</h4>
-                    <p style="margin: 0; font-size: 0.85rem; color: #999;">
+                    <h4 class="row-title">{{ member.user_id }}</h4>
+                    <p class="row-subtitle">
                         Joined {{ member.joined_at[:10] }}
                         {% if member.role == 'creator' %}
-                        • <span style="background: #4CAF50; color: white; padding: 0.2rem 0.5rem; border-radius: 0.3rem; font-size: 0.8rem;">Creator</span>
+                        • <span class="pill pill-success">Creator</span>
                         {% endif %}
                     </p>
                 </div>
@@ -222,25 +118,25 @@
     </div>
 
     <!-- Settlement Tab -->
-    <div id="settlement-tab" class="tab-content" style="display: none;">
-        <h2 style="margin: 0 0 0.5rem; font-size: 1.3rem;">Settlement Plan</h2>
-        <p style="margin: 0 0 1.25rem; color: #64748b; font-size: 0.92rem;">Choose a payment method per settlement line. Actions lock while processing to prevent duplicate submissions.</p>
-        <div id="settlementNotice" class="field-error" style="margin-bottom: 0.85rem;"></div>
+    <div id="settlement-tab" class="tab-content">
+        <h2 class="section-title">Settlement Plan</h2>
+        <p class="section-subtitle">Choose a payment method per settlement line. Actions lock while processing to prevent duplicate submissions.</p>
+        <div id="settlementNotice" class="field-error"></div>
 
         {% if pending_cash_requests and pending_cash_requests|length > 0 %}
-        <div style="background: #fff7ed; border: 1px solid #fed7aa; border-radius: 0.75rem; padding: 1rem; margin-bottom: 1.2rem;">
-            <h3 style="margin: 0 0 0.75rem; font-size: 1rem; color: #9a3412;">Cash Approval Requests</h3>
-            <div style="display: grid; gap: 0.75rem;">
+        <div class="card settlement-requests">
+            <h3 class="settlement-requests-title">Cash Approval Requests</h3>
+            <div class="settlement-request-grid">
                 {% for req in pending_cash_requests %}
-                <div style="display: flex; justify-content: space-between; align-items: center; gap: 1rem; background: #fff; border: 1px solid #fdba74; border-radius: 0.5rem; padding: 0.85rem;">
+                <div class="settlement-request-row">
                     <div>
-                        <div style="font-weight: 600; color: #7c2d12;">{{ req.from_user }} paid you {{ group.currency }} {{ "%.2f"|format(req.amount) }} in CASH</div>
-                        <div style="font-size: 0.82rem; color: #9a3412;">Requested at {{ req.created_at }}</div>
+                        <div class="settlement-request-main">{{ req.from_user }} paid you {{ group.currency }} {{ "%.2f"|format(req.amount) }} in CASH</div>
+                        <div class="settlement-request-meta">Requested at {{ req.created_at }}</div>
                     </div>
                     <button type="button"
                             data-action-btn="approve-cash-{{ req.id }}"
                             onclick="approveCashPayment({{ group.group_id }}, {{ req.id }})"
-                            style="background: #ea580c; color: #fff; border: none; border-radius: 0.45rem; padding: 0.55rem 0.9rem; font-weight: 600; cursor: pointer;">
+                            class="btn btn-warning btn-sm">
                         Approve Cash
                     </button>
                 </div>
@@ -250,46 +146,33 @@
         {% endif %}
         
         {% if settlements %}
-        <div style="background: white; border-radius: 0.75rem; border: 1px solid #e0e0e0;">
-            <div style="padding: 1.5rem; background: #f9f9f9; border-bottom: 1px solid #e0e0e0;">
-                <p style="margin: 0; color: #666; font-size: 0.9rem;">
+        <div class="card list-panel">
+            <div class="settlement-intro">
+                <p>
                     Follow these transactions to settle all debts in the group:
                 </p>
             </div>
             {% for settlement in settlements %}
-            <div style="
-                padding: 1.5rem;
-                border-bottom: 1px solid #e0e0e0;
-                display: flex;
-                align-items: center;
-                gap: 1rem;
-            ">
-                <div style="flex: 1;">
-                    <div style="font-size: 1rem; color: #333;">
-                        <span style="font-weight: 600;">{{ settlement.from }}</span>
-                        <span style="color: #999;">pays</span>
-                        <span style="font-weight: 600;">{{ settlement.to }}</span>
+            <div class="list-row settlement-row">
+                <div class="settlement-copy">
+                    <div class="settlement-main">
+                        <span class="settlement-user">{{ settlement.from }}</span>
+                        <span class="settlement-verb">pays</span>
+                        <span class="settlement-user">{{ settlement.to }}</span>
                     </div>
                 </div>
-                <div style="
-                    background: #E8F5E9;
-                    padding: 0.75rem 1.5rem;
-                    border-radius: 0.5rem;
-                    font-weight: 600;
-                    color: #2E7D32;
-                    font-size: 1.1rem;
-                ">
+                <div class="settlement-amount">
                     {{ group.currency }} {{ "%.2f"|format(settlement.amount) }}
                 </div>
                 {% set is_debtor = settlement.from == session.get('user_id') %}
                 {% set upi_allowed = is_debtor and group.currency == 'INR' %}
-                <div style="display: flex; gap: 0.45rem; align-items: center;">
+                <div class="settlement-actions">
                     <button type="button"
                             data-action-btn="request-cash-{{ loop.index0 }}"
                             data-action-group="settlement-{{ loop.index0 }}"
                             onclick='requestCashPayment({{ group.group_id }}, {{ settlement.to|tojson }}, {{ settlement.amount }})'
                             {% if not is_debtor %}disabled{% endif %}
-                            style="padding: 0.45rem 0.75rem; border-radius: 0.4rem; border: 1px solid #f59e0b; background: {% if is_debtor %}#fffbeb{% else %}#f5f5f5{% endif %}; color: #92400e; font-weight: 600; cursor: {% if is_debtor %}pointer{% else %}not-allowed{% endif %};">
+                            class="btn btn-warning btn-sm">
                         Cash
                     </button>
                     <button type="button"
@@ -298,7 +181,7 @@
                             onclick='openUpiAmountModal({{ group.group_id }}, {{ settlement.to|tojson }}, {{ settlement.amount }})'
                             {% if not upi_allowed %}disabled{% endif %}
                             title="{% if group.currency != 'INR' %}UPI works only for INR groups{% elif not is_debtor %}Only debtor can initiate UPI{% endif %}"
-                            style="padding: 0.45rem 0.75rem; border-radius: 0.4rem; border: 1px solid #2563eb; background: {% if upi_allowed %}#eff6ff{% else %}#f5f5f5{% endif %}; color: #1d4ed8; font-weight: 600; cursor: {% if upi_allowed %}pointer{% else %}not-allowed{% endif %};">
+                            class="btn btn-ghost btn-sm">
                         {% if group.currency == 'INR' %}UPI{% else %}UPI (INR only){% endif %}
                     </button>
                 </div>
@@ -306,41 +189,21 @@
             {% endfor %}
         </div>
         {% else %}
-        <div style="
-            text-align: center;
-            padding: 2rem;
-            background: #f5f5f5;
-            border-radius: 0.5rem;
-            border: 2px dashed #ddd;
-        ">
-            <div style="font-size: 2rem; margin-bottom: 0.5rem;">✨</div>
-            <p style="margin: 0; color: #666;">Everyone is settled up! No transactions needed.</p>
+        <div class="empty-state">
+            <div class="empty-emoji" aria-hidden="true">✨</div>
+            <p class="empty-state-description">Everyone is settled up! No transactions needed.</p>
         </div>
         {% endif %}
 
         <!-- User Balances -->
         {% if balances %}
-        <div style="margin-top: 2rem;">
-            <h3 style="margin: 0 0 1rem; font-size: 1.1rem;">User Balances</h3>
-            <div style="
-                display: grid;
-                grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-                gap: 1rem;
-            ">
+        <div class="balance-panel">
+            <h3>User Balances</h3>
+            <div class="balance-grid">
                 {% for user, balance in balances.items() %}
-                <div style="
-                    background: white;
-                    padding: 1rem;
-                    border-radius: 0.5rem;
-                    border-left: 4px solid {% if balance > 0 %}#4CAF50{% elif balance < 0 %}#f44336{% else %}#999{% endif %};
-                ">
-                    <div style="font-weight: 600; color: #333;">{{ user }}</div>
-                    <div style="
-                        margin-top: 0.5rem;
-                        font-size: 1.1rem;
-                        font-weight: 600;
-                        color: {% if balance > 0 %}#4CAF50{% elif balance < 0 %}#f44336{% else %}#999{% endif %};
-                    ">
+                <div class="balance-card {% if balance > 0 %}creditor{% elif balance < 0 %}debtor{% else %}neutral{% endif %}">
+                    <div class="balance-user">{{ user }}</div>
+                    <div class="balance-value">
                         {% if balance > 0 %}
                             Owed {{ "%.2f"|format(balance) }}
                         {% elif balance < 0 %}
@@ -357,150 +220,83 @@
     </div>
 
     <!-- Ledger Tab -->
-    <div id="ledger-tab" class="tab-content" style="display: none;">
-        <h2 style="margin: 0 0 1.5rem; font-size: 1.3rem;">Transaction Ledger</h2>
+    <div id="ledger-tab" class="tab-content">
+        <h2 class="section-title">Transaction Ledger</h2>
         
         <!-- Summary Cards -->
-        <div style="
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-            gap: 1rem;
-            margin-bottom: 2rem;
-        ">
-            <div style="background: white; padding: 1.5rem; border-radius: 0.75rem; border-left: 4px solid #007BFF;">
-                <div style="font-size: 0.85rem; color: #666; text-transform: uppercase; font-weight: 600; margin-bottom: 0.5rem;">Total Transactions</div>
-                <div id="ledger-total-tx" style="font-size: 1.75rem; font-weight: 700; color: #333;">0</div>
+        <div class="ledger-summary-grid">
+            <div class="ledger-summary-card tone-primary">
+                <div class="ledger-summary-label">Total Transactions</div>
+                <div id="ledger-total-tx" class="ledger-summary-value">0</div>
             </div>
-            <div style="background: white; padding: 1.5rem; border-radius: 0.75rem; border-left: 4px solid #4CAF50;">
-                <div style="font-size: 0.85rem; color: #666; text-transform: uppercase; font-weight: 600; margin-bottom: 0.5rem;">Settled</div>
-                <div id="ledger-settled" style="font-size: 1.75rem; font-weight: 700; color: #4CAF50;">0</div>
+            <div class="ledger-summary-card tone-success">
+                <div class="ledger-summary-label">Settled</div>
+                <div id="ledger-settled" class="ledger-summary-value">0</div>
             </div>
-            <div style="background: white; padding: 1.5rem; border-radius: 0.75rem; border-left: 4px solid #FF9800;">
-                <div style="font-size: 0.85rem; color: #666; text-transform: uppercase; font-weight: 600; margin-bottom: 0.5rem;">Pending</div>
-                <div id="ledger-pending" style="font-size: 1.75rem; font-weight: 700; color: #FF9800;">0</div>
+            <div class="ledger-summary-card tone-warning">
+                <div class="ledger-summary-label">Pending</div>
+                <div id="ledger-pending" class="ledger-summary-value">0</div>
             </div>
-            <div style="background: white; padding: 1.5rem; border-radius: 0.75rem; border-left: 4px solid #e91e63;">
-                <div style="font-size: 0.85rem; color: #666; text-transform: uppercase; font-weight: 600; margin-bottom: 0.5rem;">Total Volume</div>
-                <div id="ledger-total-volume" style="font-size: 1.75rem; font-weight: 700; color: #333;">₹0.00</div>
+            <div class="ledger-summary-card tone-secondary">
+                <div class="ledger-summary-label">Total Volume</div>
+                <div id="ledger-total-volume" class="ledger-summary-value">₹0.00</div>
             </div>
         </div>
 
         <!-- Transaction History Table -->
-        <div style="background: white; border-radius: 0.75rem; border: 1px solid #e0e0e0; overflow: hidden; margin-bottom: 2rem;">
-            <div style="padding: 1.5rem; background: #f9f9f9; border-bottom: 1px solid #e0e0e0;">
-                <h3 style="margin: 0; font-size: 1rem; font-weight: 600;">Transaction History</h3>
+        <div class="card ledger-history-card">
+            <div class="ledger-history-head">
+                <h3>Transaction History</h3>
             </div>
-            <div id="ledger-transactions" style="max-height: 600px; overflow-y: auto;">
-                <div style="text-align: center; padding: 3rem; color: #999;">Loading transactions...</div>
+            <div id="ledger-transactions" class="ledger-transactions">
+                <div class="ledger-placeholder">Loading transactions...</div>
             </div>
         </div>
 
         <!-- Current Balance Sheet -->
-        <div style="background: white; border-radius: 0.75rem; border: 1px solid #e0e0e0; padding: 1.5rem;">
-            <h3 style="margin: 0 0 1.5rem; font-size: 1rem; font-weight: 600;">Current Balances</h3>
-            <div id="ledger-balances" style="
-                display: grid;
-                grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-                gap: 1rem;
-            ">
-                <div style="text-align: center; padding: 2rem; color: #999;">Loading balances...</div>
+        <div class="card ledger-balances-card">
+            <h3>Current Balances</h3>
+            <div id="ledger-balances" class="ledger-balances-grid">
+                <div class="ledger-placeholder">Loading balances...</div>
             </div>
         </div>
     </div>
 
 
 <!-- Add Expense Modal -->
-<div id="addExpenseModal" style="
-    display: none;
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0,0,0,0.5);
-    z-index: 1000;
-" onclick="if(event.target === this) closeModal('addExpenseModal')">
-    <div style="
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        background: white;
-        padding: 2rem;
-        border-radius: 0.75rem;
-        width: 90%;
-        max-width: 500px;
-    ">
-        <h2 style="margin: 0 0 1.5rem;">Add Expense</h2>
+<div id="addExpenseModal" class="legacy-modal" onclick="if(event.target === this) closeModal('addExpenseModal')">
+    <div class="legacy-modal-panel">
+        <h2 class="legacy-modal-title">Add Expense</h2>
         <form id="expenseForm">
-            <div style="margin-bottom: 1rem;">
-                <label style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: #1f2937;">Expense Name</label>
-                <input type="text" id="expenseDescription" placeholder="e.g. Dinner at Spice Hub" required style="
-                    width: 100%;
-                    padding: 0.75rem;
-                    border: 1px solid #cfd4dc;
-                    border-radius: 0.4rem;
-                    font-size: 0.95rem;
-                    box-sizing: border-box;
-                    color: #111827;
-                    background: #ffffff;
-                ">
+            <div class="legacy-field">
+                <label>Expense Name</label>
+                <input class="input" type="text" id="expenseDescription" placeholder="e.g. Dinner at Spice Hub" required>
                 <div id="expenseDescriptionError" class="field-error" aria-live="polite"></div>
             </div>
 
-            <div style="margin-bottom: 1rem;">
-                <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">Amount ({{ group.currency }})</label>
-                <input type="number" id="expenseAmount" step="0.01" required style="
-                    width: 100%;
-                    padding: 0.75rem;
-                    border: 1px solid #ddd;
-                    border-radius: 0.4rem;
-                    font-size: 0.95rem;
-                    box-sizing: border-box;
-                ">
+            <div class="legacy-field">
+                <label>Amount ({{ group.currency }})</label>
+                <input class="input" type="number" id="expenseAmount" step="0.01" required>
                 <div id="expenseAmountError" class="field-error" aria-live="polite"></div>
             </div>
 
-            <div style="margin-bottom: 1rem;">
-                <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">Split Method</label>
-                <select id="splitMethod" onchange="updateSplitUI()" style="
-                    width: 100%;
-                    padding: 0.75rem;
-                    border: 1px solid #ddd;
-                    border-radius: 0.4rem;
-                    font-size: 0.95rem;
-                ">
+            <div class="legacy-field">
+                <label>Split Method</label>
+                <select class="input" id="splitMethod" onchange="updateSplitUI()">
                     <option value="equal">Equal Split (everyone pays same amount)</option>
                     <option value="percentage">Percentage Split</option>
                     <option value="custom">Custom Amount Split</option>
                 </select>
             </div>
 
-            <div id="splitInputs" style="margin-bottom: 1rem; max-height: 200px; overflow-y: auto;"></div>
+            <div id="splitInputs" class="split-inputs"></div>
             <div id="expenseFormError" class="field-error" aria-live="polite"></div>
 
-            <div style="display: flex; gap: 1rem;">
-                <button type="button" onclick="closeModal('addExpenseModal')" style="
-                    flex: 1;
-                    padding: 0.75rem;
-                    background: #f0f0f0;
-                    border: none;
-                    border-radius: 0.4rem;
-                    cursor: pointer;
-                    font-weight: 500;
-                ">
+            <div class="legacy-actions">
+                <button type="button" onclick="closeModal('addExpenseModal')" class="btn btn-ghost">
                     Cancel
                 </button>
-                <button type="submit" style="
-                    flex: 1;
-                    padding: 0.75rem;
-                    background: #4CAF50;
-                    color: white;
-                    border: none;
-                    border-radius: 0.4rem;
-                    cursor: pointer;
-                    font-weight: 500;
-                ">
+                <button type="submit" class="btn btn-primary">
                     Add Expense
                 </button>
             </div>
@@ -509,67 +305,24 @@
 </div>
 
 <!-- Add Member Modal -->
-<div id="addMemberModal" style="
-    display: none;
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0,0,0,0.5);
-    z-index: 1000;
-" onclick="if(event.target === this) closeModal('addMemberModal')">
-    <div style="
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        background: white;
-        padding: 2rem;
-        border-radius: 0.75rem;
-        width: 90%;
-        max-width: 500px;
-    ">
-        <h2 style="margin: 0 0 1.5rem;">Add Member</h2>
+<div id="addMemberModal" class="legacy-modal" onclick="if(event.target === this) closeModal('addMemberModal')">
+    <div class="legacy-modal-panel">
+        <h2 class="legacy-modal-title">Add Member</h2>
         <form id="memberForm">
-            <div style="margin-bottom: 1rem;">
-                <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">Username</label>
-                <input type="text" id="memberUsername" autocomplete="off" placeholder="Type username..." required style="
-                    width: 100%;
-                    padding: 0.75rem;
-                    border: 1px solid #ddd;
-                    border-radius: 0.4rem;
-                    font-size: 0.95rem;
-                    box-sizing: border-box;
-                ">
+            <div class="legacy-field">
+                <label>Username</label>
+                <input class="input" type="text" id="memberUsername" autocomplete="off" placeholder="Type username..." required>
                 <div id="memberUsernameError" class="field-error" aria-live="polite"></div>
                 <div id="memberSuggestions" class="member-suggestions" aria-live="polite"></div>
             </div>
 
             <div id="memberFormError" class="field-error" aria-live="polite"></div>
 
-            <div style="display: flex; gap: 1rem;">
-                <button type="button" onclick="closeModal('addMemberModal')" style="
-                    flex: 1;
-                    padding: 0.75rem;
-                    background: #f0f0f0;
-                    border: none;
-                    border-radius: 0.4rem;
-                    cursor: pointer;
-                    font-weight: 500;
-                ">
+            <div class="legacy-actions">
+                <button type="button" onclick="closeModal('addMemberModal')" class="btn btn-ghost">
                     Cancel
                 </button>
-                <button type="submit" style="
-                    flex: 1;
-                    padding: 0.75rem;
-                    background: #4CAF50;
-                    color: white;
-                    border: none;
-                    border-radius: 0.4rem;
-                    cursor: pointer;
-                    font-weight: 500;
-                ">
+                <button type="submit" class="btn btn-primary">
                     Add Member
                 </button>
             </div>
@@ -578,114 +331,64 @@
 </div>
 
 <!-- UPI Amount Selection Modal -->
-<div id="upiAmountModal" style="
-    display: none;
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0,0,0,0.5);
-    z-index: 1100;
-" onclick="if(event.target === this) closeModal('upiAmountModal')">
-    <div style="
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        background: white;
-        padding: 1.5rem;
-        border-radius: 0.75rem;
-        width: 92%;
-        max-width: 420px;
-    ">
-        <h3 style="margin: 0 0 0.7rem;">UPI Payment</h3>
-        <p style="margin: 0 0 1rem; color: #64748b; font-size: 0.9rem;">Choose whether to pay full dues or a custom amount.</p>
+<div id="upiAmountModal" class="legacy-modal" onclick="if(event.target === this) closeModal('upiAmountModal')">
+    <div class="legacy-modal-panel legacy-modal-sm">
+        <h3 class="legacy-modal-title">UPI Payment</h3>
+        <p class="legacy-muted">Choose whether to pay full dues or a custom amount.</p>
 
-        <div style="display: grid; gap: 0.55rem; margin-bottom: 0.9rem;">
-            <label style="display:flex; align-items:center; gap:0.55rem;">
+        <div class="radio-group">
+            <label class="radio-row">
                 <input type="radio" name="upiAmountMode" value="full" checked>
                 <span>Pay full amount (<strong id="upiFullAmountText">Rs 0.00</strong>)</span>
             </label>
-            <label style="display:flex; align-items:center; gap:0.55rem;">
+            <label class="radio-row">
                 <input type="radio" name="upiAmountMode" value="custom">
                 <span>Pay custom amount</span>
             </label>
         </div>
 
-        <div style="margin-bottom: 0.9rem;">
-            <input type="number" id="upiCustomAmount" step="0.01" min="0.01" placeholder="Enter custom amount" disabled style="
-                width: 100%;
-                padding: 0.65rem;
-                border: 1px solid #d1d5db;
-                border-radius: 0.45rem;
-                box-sizing: border-box;
-            ">
-            <div id="upiAmountError" class="field-error" style="margin-top: 0.45rem;"></div>
+        <div class="legacy-field">
+            <input class="input" type="number" id="upiCustomAmount" step="0.01" min="0.01" placeholder="Enter custom amount" disabled>
+            <div id="upiAmountError" class="field-error"></div>
         </div>
 
-        <div style="display:flex; gap:0.65rem;">
-            <button type="button" onclick="closeModal('upiAmountModal')" style="flex:1; padding:0.65rem; border:none; border-radius:0.45rem; background:#f1f5f9; cursor:pointer;">Cancel</button>
-            <button type="button" id="upiProceedBtn" onclick="proceedUpiPayment()" style="flex:1; padding:0.65rem; border:none; border-radius:0.45rem; background:#2563eb; color:#fff; font-weight:600; cursor:pointer;">Pay</button>
+        <div class="legacy-actions">
+            <button type="button" onclick="closeModal('upiAmountModal')" class="btn btn-ghost">Cancel</button>
+            <button type="button" id="upiProceedBtn" onclick="proceedUpiPayment()" class="btn btn-primary">Pay</button>
         </div>
     </div>
 </div>
 
 <!-- UPI QR Modal -->
-<div id="upiQrModal" style="
-    display: none;
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0,0,0,0.5);
-    z-index: 1200;
-" onclick="if(event.target === this) closeModal('upiQrModal')">
-    <div style="
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        background: white;
-        padding: 1.5rem;
-        border-radius: 0.75rem;
-        width: 92%;
-        max-width: 460px;
-    ">
-        <h3 style="margin: 0 0 0.55rem;">Scan & Pay</h3>
-        <p id="upiQrSubtext" style="margin: 0 0 0.9rem; color: #64748b; font-size: 0.9rem;"></p>
+<div id="upiQrModal" class="legacy-modal" onclick="if(event.target === this) closeModal('upiQrModal')">
+    <div class="legacy-modal-panel legacy-modal-sm">
+        <h3 class="legacy-modal-title">Scan & Pay</h3>
+        <p id="upiQrSubtext" class="legacy-muted"></p>
 
-        <div id="upiQrContainer" style="display:flex; justify-content:center; padding:0.8rem 0;"></div>
+        <div id="upiQrContainer" class="upi-qr-container"></div>
 
-        <div style="text-align:center; margin: 0.5rem 0 0.8rem;">
-            <a href="#" id="upiFallbackLink" onclick="toggleUpiFallback(event)" style="font-size:0.86rem;">Unable to scan QR?</a>
+        <div class="upi-fallback-link-wrap">
+            <a href="#" id="upiFallbackLink" onclick="toggleUpiFallback(event)">Unable to scan QR?</a>
         </div>
 
-        <div id="upiFallbackPanel" style="display:none; background:#f8fafc; border:1px solid #e2e8f0; border-radius:0.5rem; padding:0.75rem; margin-bottom:0.9rem;">
-            <div style="font-size:0.88rem; margin-bottom:0.35rem;"><strong>UPI ID:</strong> <span id="upiFallbackId"></span></div>
-            <div style="font-size:0.88rem; margin-bottom:0.35rem;"><strong>Amount:</strong> Rs <span id="upiFallbackAmount"></span></div>
-            <a id="upiDeepLink" href="#" style="font-size:0.85rem;">Open UPI app with amount</a>
-            <div style="display:flex; gap:0.5rem; margin-top:0.6rem;">
-                <button type="button" onclick="copyUpiFallbackId()" style="flex:1; padding:0.45rem; border:1px solid #cbd5e1; border-radius:0.4rem; background:#fff; font-size:0.82rem; cursor:pointer;">Copy UPI ID</button>
-                <button type="button" onclick="copyUpiDeepLink()" style="flex:1; padding:0.45rem; border:1px solid #cbd5e1; border-radius:0.4rem; background:#fff; font-size:0.82rem; cursor:pointer;">Copy Link</button>
+        <div id="upiFallbackPanel" class="upi-fallback-panel">
+            <div><strong>UPI ID:</strong> <span id="upiFallbackId"></span></div>
+            <div><strong>Amount:</strong> Rs <span id="upiFallbackAmount"></span></div>
+            <a id="upiDeepLink" href="#">Open UPI app with amount</a>
+            <div class="legacy-actions upi-copy-actions">
+                <button type="button" onclick="copyUpiFallbackId()" class="btn btn-ghost btn-sm">Copy UPI ID</button>
+                <button type="button" onclick="copyUpiDeepLink()" class="btn btn-ghost btn-sm">Copy Link</button>
             </div>
         </div>
 
-        <div style="margin-bottom: 0.9rem;">
-            <label style="display:block; margin-bottom:0.35rem; font-size:0.86rem; color:#475569;">UTR/Reference (optional)</label>
-            <input type="text" id="upiRefInput" placeholder="Enter UTR/reference after payment" style="
-                width:100%;
-                padding:0.6rem;
-                border:1px solid #d1d5db;
-                border-radius:0.45rem;
-                box-sizing:border-box;
-            ">
+        <div class="legacy-field">
+            <label>UTR/Reference (optional)</label>
+            <input class="input" type="text" id="upiRefInput" placeholder="Enter UTR/reference after payment">
         </div>
 
-        <div style="display:flex; gap:0.65rem;">
-            <button type="button" onclick="closeModal('upiQrModal')" style="flex:1; padding:0.65rem; border:none; border-radius:0.45rem; background:#f1f5f9; cursor:pointer;">Cancel</button>
-            <button type="button" id="upiPaidBtn" onclick="confirmUpiPaid()" style="flex:1; padding:0.65rem; border:none; border-radius:0.45rem; background:#16a34a; color:#fff; font-weight:600; cursor:pointer;">Paid</button>
+        <div class="legacy-actions">
+            <button type="button" onclick="closeModal('upiQrModal')" class="btn btn-ghost">Cancel</button>
+            <button type="button" id="upiPaidBtn" onclick="confirmUpiPaid()" class="btn btn-success">Paid</button>
         </div>
     </div>
 </div>
@@ -732,19 +435,17 @@ function clearMemberErrors() {
 function switchTab(tabName) {
     // Hide all tabs
     document.querySelectorAll('.tab-content').forEach(tab => {
-        tab.style.display = 'none';
+        tab.classList.remove('active-tab');
     });
 
-    // Reset button styles
+    // Reset button states
     document.querySelectorAll('.tab-button').forEach(btn => {
-        btn.style.color = '#999';
-        btn.style.borderBottomColor = 'transparent';
+        btn.classList.remove('active');
     });
 
     // Show selected tab
-    document.getElementById(tabName + '-tab').style.display = 'block';
-    document.querySelector(`[data-tab="${tabName}"]`).style.color = '#333';
-    document.querySelector(`[data-tab="${tabName}"]`).style.borderBottomColor = '#007BFF';
+    document.getElementById(tabName + '-tab').classList.add('active-tab');
+    document.querySelector(`[data-tab="${tabName}"]`).classList.add('active');
 
     // Load ledger data if ledger tab is clicked
     if (tabName === 'ledger') {
@@ -776,19 +477,13 @@ function updateSplitUI() {
     container.innerHTML = '';
     
     if (method === 'equal') {
-        container.innerHTML = '<p style="padding: 1rem; background: #f9f9f9; border-radius: 0.4rem; color: #666;">Amount will be split equally among all members</p>';
+        container.innerHTML = '<p class="split-note">Amount will be split equally among all members</p>';
     } else {
         members.forEach(member => {
             container.innerHTML += `
-                <div style="margin-bottom: 0.75rem;">
-                    <label style="font-size: 0.9rem; color: #666;">${member.user_id}</label>
-                    <input type="number" class="split-input" data-user="${member.user_id}" step="0.01" min="0" style="
-                        width: 100%;
-                        padding: 0.5rem;
-                        border: 1px solid #ddd;
-                        border-radius: 0.4rem;
-                        margin-top: 0.3rem;
-                    ">
+                <div class="split-row">
+                    <label class="split-row-label">${member.user_id}</label>
+                    <input type="number" class="split-input input" data-user="${member.user_id}" step="0.01" min="0">
                 </div>
             `;
         });
@@ -1343,33 +1038,33 @@ async function loadLedgerData() {
         document.getElementById('ledger-total-tx').textContent = transactions.length;
         document.getElementById('ledger-settled').textContent = settled;
         document.getElementById('ledger-pending').textContent = pending;
-        document.getElementById('ledger-total-volume').textContent = '₹' + totalVolume.toFixed(2);
+        document.getElementById('ledger-total-volume').textContent = `${groupCurrency} ${totalVolume.toFixed(2)}`;
 
         // Render transactions table
         const txContainer = document.getElementById('ledger-transactions');
         if (transactions.length === 0) {
-            txContainer.innerHTML = '<div style="text-align: center; padding: 3rem; color: #999;"><p>No transactions yet</p></div>';
+            txContainer.innerHTML = '<div class="ledger-placeholder"><p>No transactions yet</p></div>';
         } else {
-            let table = '<table style="width: 100%; border-collapse: collapse;">';
-            table += '<thead><tr style="background: #f5f5f5; border-bottom: 2px solid #e0e0e0;">';
-            table += '<th style="padding: 1rem; text-align: left; font-weight: 600; color: #333;">From</th>';
-            table += '<th style="padding: 1rem; text-align: left; font-weight: 600; color: #333;">To</th>';
-            table += '<th style="padding: 1rem; text-align: left; font-weight: 600; color: #333;">Amount</th>';
-            table += '<th style="padding: 1rem; text-align: left; font-weight: 600; color: #333;">Date</th>';
-            table += '<th style="padding: 1rem; text-align: left; font-weight: 600; color: #333;">Status</th>';
+            let table = '<table class="ledger-table">';
+            table += '<thead><tr>';
+            table += '<th>From</th>';
+            table += '<th>To</th>';
+            table += '<th>Amount</th>';
+            table += '<th>Date</th>';
+            table += '<th>Status</th>';
             table += '</tr></thead><tbody>';
 
             transactions.forEach(tx => {
                 const date = new Date(tx.timestamp).toLocaleDateString();
-                const statusColor = getStatusColor(tx.status);
                 const statusText = tx.status === 'COMPLETED' ? '✓ Settled' : '⏳ Pending';
+                const statusClass = tx.status === 'COMPLETED' ? 'ledger-status-settled' : 'ledger-status-pending';
 
-                table += `<tr style="border-bottom: 1px solid #e0e0e0;">`;
-                table += `<td style="padding: 1rem; color: #333;"><strong>${tx.payer_name || tx.payer_id}</strong></td>`;
-                table += `<td style="padding: 1rem; color: #333;"><strong>${tx.payee_name || tx.payee_id}</strong></td>`;
-                table += `<td style="padding: 1rem; color: #007BFF; font-weight: 600;">₹${parseFloat(tx.amount).toFixed(2)}</td>`;
-                table += `<td style="padding: 1rem; color: #666;">${date}</td>`;
-                table += `<td style="padding: 1rem;"><span style="background: ${statusColor}20; color: ${statusColor}; padding: 0.4rem 0.8rem; border-radius: 0.3rem; font-size: 0.85rem; font-weight: 600;">${statusText}</span></td>`;
+                table += '<tr>';
+                table += `<td><strong>${tx.payer_name || tx.payer_id}</strong></td>`;
+                table += `<td><strong>${tx.payee_name || tx.payee_id}</strong></td>`;
+                table += `<td class="ledger-amount-cell">${groupCurrency} ${parseFloat(tx.amount).toFixed(2)}</td>`;
+                table += `<td class="ledger-date-cell">${date}</td>`;
+                table += `<td><span class="ledger-status-pill ${statusClass}">${statusText}</span></td>`;
                 table += `</tr>`;
             });
 
@@ -1382,22 +1077,29 @@ async function loadLedgerData() {
         const balanceEntries = Object.entries(balances).sort((a, b) => Math.abs(b[1]) - Math.abs(a[1]));
 
         if (balanceEntries.length === 0) {
-            balContainer.innerHTML = '<div style="grid-column: 1 / -1; text-align: center; padding: 2rem; color: #999;">All members settled!</div>';
+            balContainer.innerHTML = '<div class="ledger-placeholder ledger-placeholder-full">All members settled!</div>';
         } else {
             let balanceHtml = '';
             balanceEntries.forEach(([user, balance]) => {
-                const color = getColorForBalance(balance);
                 let statusText = 'Settled';
-                if (balance > 0.01) statusText = `Owed ₹${balance.toFixed(2)}`;
-                else if (balance < -0.01) statusText = `Owes ₹${Math.abs(balance).toFixed(2)}`;
+                let roleText = '';
+                let toneClass = 'ledger-balance-neutral';
+                if (balance > 0.01) statusText = `Owed ${groupCurrency} ${balance.toFixed(2)}`;
+                else if (balance < -0.01) statusText = `Owes ${groupCurrency} ${Math.abs(balance).toFixed(2)}`;
+
+                if (balance > 0.01) {
+                    roleText = 'Creditor';
+                    toneClass = 'ledger-balance-creditor';
+                } else if (balance < -0.01) {
+                    roleText = 'Debtor';
+                    toneClass = 'ledger-balance-debtor';
+                }
 
                 balanceHtml += `
-                    <div style="background: #f9f9f9; padding: 1.5rem; border-radius: 0.5rem; border-left: 4px solid ${color};">
-                        <div style="font-weight: 600; color: #333; margin-bottom: 0.5rem;">${user}</div>
-                        <div style="font-size: 1.1rem; font-weight: 700; color: ${color};">${statusText}</div>
-                        <div style="font-size: 0.75rem; color: #999; margin-top: 0.5rem; text-transform: uppercase; letter-spacing: 0.5px;">
-                            ${balance > 0 ? 'Creditor' : balance < 0 ? 'Debtor' : ''}
-                        </div>
+                    <div class="ledger-balance-item ${toneClass}">
+                        <div class="ledger-balance-user">${user}</div>
+                        <div class="ledger-balance-value">${statusText}</div>
+                        <div class="ledger-balance-role">${roleText}</div>
                     </div>
                 `;
             });
@@ -1405,8 +1107,8 @@ async function loadLedgerData() {
         }
     } catch (error) {
         console.error('Error loading ledger:', error);
-        document.getElementById('ledger-transactions').innerHTML = '<div style="text-align: center; padding: 2rem; color: #c33;">Error loading transactions</div>';
-        document.getElementById('ledger-balances').innerHTML = '<div style="text-align: center; padding: 2rem; color: #c33;">Error loading balances</div>';
+        document.getElementById('ledger-transactions').innerHTML = '<div class="ledger-placeholder ledger-error">Error loading transactions</div>';
+        document.getElementById('ledger-balances').innerHTML = '<div class="ledger-placeholder ledger-error">Error loading balances</div>';
     }
 }
 
@@ -1435,111 +1137,4 @@ document.querySelectorAll('input[name="upiAmountMode"]').forEach((radio) => {
     });
 });
 </script>
-
-<style>
-    .tab-button:hover {
-        opacity: 0.8;
-    }
-
-    .field-error {
-        min-height: 1rem;
-        margin-top: 0.4rem;
-        font-size: 0.82rem;
-        color: #dc2626;
-    }
-
-    .member-suggestions {
-        margin-top: 0.6rem;
-        border: 1px solid #e5e7eb;
-        border-radius: 0.5rem;
-        max-height: 220px;
-        overflow-y: auto;
-        background: #fff;
-    }
-
-    .member-suggestion-item {
-        width: 100%;
-        border: 0;
-        background: transparent;
-        text-align: left;
-        cursor: pointer;
-        padding: 0.65rem 0.75rem;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        border-bottom: 1px solid #f3f4f6;
-    }
-
-    .member-suggestion-item:last-child {
-        border-bottom: 0;
-    }
-
-    .member-suggestion-item:hover {
-        background: #f9fafb;
-    }
-
-    .member-suggestion-item span {
-        display: grid;
-        gap: 0.15rem;
-    }
-
-    .member-suggestion-item small {
-        color: #6b7280;
-        font-size: 0.78rem;
-    }
-
-    .member-suggestion-item.friend-first {
-        background: linear-gradient(270deg, rgba(34, 197, 94, 0.16) 0%, rgba(34, 197, 94, 0.06) 40%, rgba(34, 197, 94, 0.01) 100%);
-    }
-
-    .member-badge {
-        display: inline-flex;
-        align-items: center;
-        border-radius: 999px;
-        padding: 0.2rem 0.55rem;
-        font-size: 0.72rem;
-        font-weight: 700;
-        color: #166534;
-        background: #dcfce7;
-        border: 1px solid #86efac;
-    }
-
-    .member-badge-other {
-        color: #334155;
-        background: #f1f5f9;
-        border-color: #cbd5e1;
-    }
-
-    .member-suggestion-item.muted {
-        padding: 0.7rem;
-        color: #6b7280;
-        font-size: 0.85rem;
-        cursor: default;
-    }
-
-    .loading-action {
-        opacity: 0.75;
-        position: relative;
-        pointer-events: none;
-    }
-
-    .loading-action::after {
-        content: '';
-        display: inline-block;
-        width: 0.68rem;
-        height: 0.68rem;
-        margin-left: 0.45rem;
-        border: 2px solid currentColor;
-        border-right-color: transparent;
-        border-radius: 50%;
-        vertical-align: -0.1rem;
-        animation: mm-spin 0.7s linear infinite;
-    }
-
-    @keyframes mm-spin {
-        to {
-            transform: rotate(360deg);
-        }
-    }
-</style>
 {% endblock %}

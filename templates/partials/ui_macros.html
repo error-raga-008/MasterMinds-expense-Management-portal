@@ -4,7 +4,7 @@
     <h2 class="section-title">{{ title }}</h2>
     {% endif %}
     {% if subtitle %}
-    <p class="auth-subtitle" style="margin-bottom: 1rem;">{{ subtitle }}</p>
+    <p class="section-subtitle">{{ subtitle }}</p>
     {% endif %}
     {{ caller() }}
 </section>
@@ -15,7 +15,7 @@
     <div>
         <h1 class="page-title">{{ title }}</h1>
         {% if subtitle %}
-        <p class="auth-subtitle" style="margin-bottom: 0;">{{ subtitle }}</p>
+        <p class="section-subtitle section-subtitle-compact">{{ subtitle }}</p>
         {% endif %}
     </div>
     {% if caller is defined %}
@@ -87,11 +87,11 @@
     <div class="mm-modal-backdrop" data-modal-close data-modal-id="{{ id }}" onclick="(window.MMComponents&&window.MMComponents.closeModalById&&window.MMComponents.closeModalById('{{ id }}'))||(() => { const m=document.getElementById('{{ id }}'); if(m){ m.hidden=true; m.setAttribute('aria-hidden','true'); document.body.classList.remove('modal-open'); } })()"></div>
     <div class="mm-modal-panel" role="dialog" aria-modal="true" aria-labelledby="{{ id }}Title">
         <div class="mm-modal-head">
-            <h3 id="{{ id }}Title" class="section-title" style="margin: 0;">{{ title }}</h3>
+            <h3 id="{{ id }}Title" class="section-title mm-modal-title">{{ title }}</h3>
             <button type="button" class="btn btn-ghost" data-modal-close data-modal-id="{{ id }}" onclick="(window.MMComponents&&window.MMComponents.closeModalById&&window.MMComponents.closeModalById('{{ id }}'))||(() => { const m=document.getElementById('{{ id }}'); if(m){ m.hidden=true; m.setAttribute('aria-hidden','true'); document.body.classList.remove('modal-open'); } })()" aria-label="Close dialog">Close</button>
         </div>
         {% if description %}
-        <p class="auth-subtitle" style="margin-bottom: 0.8rem;">{{ description }}</p>
+        <p class="section-subtitle">{{ description }}</p>
         {% endif %}
         <div class="mm-modal-body">
             {{ caller() }}
