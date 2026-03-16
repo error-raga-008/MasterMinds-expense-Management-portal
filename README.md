@@ -286,19 +286,9 @@ http://localhost:8000
 
 # 👨‍💻 Contributors
 
+**Rishi Rami**
 **Vishvesh Sharma**
 AI/ML & Full Stack Developer
-
-GitHub
-https://github.com/VishveshSharma2005
-
----
-
-# 🏆 Hackathon Vision
-
-SplitSmart demonstrates how **algorithmic optimization, secure financial logging, and modern FinTech UX** can be combined to build a smarter expense management system for groups.
-
-The goal is to make **shared finances transparent, efficient, and secure**.
 
 ---
 
